@@ -71,7 +71,7 @@ module.exports = {
             beats: [
                 { scene: 'embed', shot: 'drag', caption: 'Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb.' },
                 { scene: 'embed', shot: 'copied', caption: 'Lift: the payload is on the clipboard (URL, path and outerHTML were just copied).' },
-                { scene: 'embed', shot: 'sheet', caption: 'Tap instead of drag: the distribution sheet carries the drag hint, Paste inspection and your collected snapshots.' },
+                { scene: 'embed', shot: 'sheet', caption: 'Tap instead of drag: the compact help card — drag hint, Paste inspection, and a Docs · GitHub · version line.' },
                 { scene: 'embed', shot: 'mobile', caption: 'The same embed on a 390 px phone — the FAB is always visible and safe-area aware.' },
             ],
         },

@@ -98,6 +98,11 @@
     // document.currentScript is only set during this synchronous execution.
     var bootScript = document.currentScript;
 
+    // INSP-008 — the generated registry bundle carries the real version: the
+    // publish script replaces this exact placeholder. Served from source (ui
+    // fixtures) it stays a placeholder and the sheet hides the chip.
+    var VERSION = '__INSPECTOR_VERSION__';
+
     // DASH-290b §9 — self-contained HTML-wise: the host no longer places the
     // FAB markup (the old partial is gone). On first run the tool injects
     // the button + sheet at body level, reproducing the old partial
@@ -124,7 +129,10 @@
         <span class="fab-sheet-title" id="fabSheetTitle">HTML Inspector</span>
         <button type="button" id="fabClose" class="fab-sheet-close" title="Close (Esc)" aria-label="Close">✕</button>
     </div>
-    <div class="fab-sheet-intro" id="fabIntro">Drag the target icon onto a block — lift to copy its URL, path and HTML.</div>
+    <div class="fab-sheet-intro" id="fabIntro">
+        <span>Drag the round target onto a block, then lift — URL, path and HTML are copied.</span>
+        <span class="fab-sheet-intro-sub">Works with mouse and touch.</span>
+    </div>
     <label class="fab-sheet-row fab-sheet-row-inspect" id="fabInspectRow" for="fabInspect" hidden>
         <span class="fab-sheet-row-text">
             <span class="fab-sheet-row-label">Inspect &amp; copy HTML</span>
@@ -155,6 +163,13 @@
         <span class="fab-sheet-snapshots-count" id="fabSnapshotsCount"></span>
         <button type="button" id="fabCopyAll" class="fab-sheet-action">Copy all for AI</button>
     </div>
+    <div class="fab-sheet-links" id="fabLinks">
+        <a href="https://311ecode.github.io/html-inspector/docs/" target="_blank" rel="noopener noreferrer">Docs</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/311ecode/html-inspector" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <span aria-hidden="true">·</span>
+        <span class="fab-sheet-version" id="fabVersion"></span>
+    </div>
 </aside>
 `;
     }
@@ -172,6 +187,7 @@
     if (!fab || !backdrop || !sheet) return; // FAB absent — nothing to wire
 
     var sheetTitle = document.getElementById('fabSheetTitle');
+    var versionEl = document.getElementById('fabVersion');
     var intro = document.getElementById('fabIntro');
     var inspectRow = document.getElementById('fabInspectRow');
     var inspectSwitch = document.getElementById('fabInspect');
@@ -248,6 +264,13 @@
     // drag hint, Paste inspection and the collected snapshots. The Inspect /
     // Append switches only exist when the embedder opted in — that decision is
     // theirs, not the visitor's, so there is no switch to flip.
+    // INSP-008 — the runtime version chip; hidden when served from source (the
+    // placeholder is not a version) so a dev fixture never shows garbage.
+    if (versionEl) {
+        if (/^\d+\.\d+\.\d+$/.test(VERSION)) versionEl.textContent = 'v' + VERSION;
+        else versionEl.hidden = true;
+    }
+
     function applyDevMode() {
         var dev = devMode();
         if (sheetTitle) sheetTitle.textContent = dev ? 'Developer tools' : 'HTML Inspector';

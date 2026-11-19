@@ -7,6 +7,7 @@
 const { test, expect } = require('playwright/test');
 const { startServer } = require('./lib/serve');
 const { dragFabTo, readClipboard } = require('./lib/gestures');
+const pkg = require('../../package.json');
 
 let srv;
 
@@ -125,18 +126,36 @@ test('the sandbox page boots the FAB and shows the copied payload back', async (
     expect(text.split('\n')[1]).toContain('article#sandbox-card-b');
 });
 
-test('the default sheet is the distribution one — no developer switches, no reload', async ({ page, context }) => {
+test('the default sheet is a compact help card — copy, links, version, no switches', async ({ page, context }) => {
     const errors = await openEmbed(page, context);
     await page.locator('#fab').click();
     await expect(page.locator('#fabSheet')).toHaveClass(/open/);
     await expect(page.locator('#fabSheetTitle')).toHaveText('HTML Inspector');
+
+    // the two-line drag hint
     await expect(page.locator('#fabIntro')).toBeVisible();
+    await expect(page.locator('#fabIntro')).toContainText('Drag the round target onto a block');
+    await expect(page.locator('#fabIntro')).toContainText('Works with mouse and touch');
+
+    // the always-useful action and the Docs/GitHub/version footer
     await expect(page.locator('#fabPaste')).toBeVisible();
+    await expect(page.locator('#fabLinks a', { hasText: 'Docs' })).toHaveAttribute(
+        'href', 'https://311ecode.github.io/html-inspector/docs/');
+    await expect(page.locator('#fabLinks a', { hasText: 'GitHub' })).toHaveAttribute(
+        'href', 'https://github.com/311ecode/html-inspector');
+    for (const a of await page.locator('#fabLinks a').all()) {
+        await expect(a).toHaveAttribute('target', '_blank');
+        expect(await a.getAttribute('rel')).toContain('noopener');
+    }
+    // the generated bundle carries the real version (registry, not a source fixture)
+    await expect(page.locator('#fabVersion')).toHaveText('v' + pkg.version);
+
+    // no developer controls, no public switch, no navigation
     await expect(page.locator('#fabInspectRow')).toBeHidden();
     await expect(page.locator('#fabAppendRow')).toBeHidden();
-    await expect(page.locator('#fabDevMode')).toHaveCount(0); // no public switch exists
+    await expect(page.locator('#fabDevMode')).toHaveCount(0);
     expect(errors).toEqual([]);
-    await expect(page).toHaveURL(srv.base + '/embed'); // the sheet never navigates
+    await expect(page).toHaveURL(srv.base + '/embed');
 });
 
 test('?dev=1 opts into the developer sheet without a switch or a reload', async ({ page, context }) => {
@@ -151,5 +170,7 @@ test('?dev=1 opts into the developer sheet without a switch or a reload', async 
     await expect(page.locator('#fabAppendRow')).toBeVisible();
     await expect(page.locator('#fabIntro')).toBeHidden();
     await expect(page.locator('#fabDevMode')).toHaveCount(0);
+    await expect(page.locator('#fabLinks a', { hasText: 'GitHub' })).toBeVisible();
+    await expect(page.locator('#fabVersion')).toHaveText('v' + pkg.version);
     expect(page.url()).toBe(before); // opt-in is resolved at boot; nothing navigates
 });

@@ -255,6 +255,41 @@ $green:     #22c55e;
   &[hidden] { display: none; }
 }
 
+.fab-sheet-intro-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: $muted;
+}
+
+// INSP-008 — Docs · GitHub · version footer, quiet and always last.
+.fab-sheet-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 4px 2px;
+  font-size: 0.72rem;
+  color: $muted;
+
+  a {
+    color: $text;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+
+    &:hover { color: $green; }
+  }
+
+  &[hidden] { display: none; }
+}
+
+.fab-sheet-version {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: $muted;
+
+  &[hidden] { display: none; }
+}
+
 .fab-sheet-fallback {
   display: flex;
   flex-direction: column;
