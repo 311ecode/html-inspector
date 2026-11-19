@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>menu-inspector fixture page</title>
+<!-- The package's own fixture. It is NOT a dashboard: no poller, no
+     MENU_* routes, no server.js. The throwaway static server in ui.spec.js
+     serves this file plus the package source at /inspector.js and the
+     compiled SCSS at /inspector.css, so the suite proves the extraction
+     with nothing else running. -->
+<link rel="stylesheet" href="/inspector.css">
+<style>
+  /* Fixture-only page chrome. The package stylesheet supplies every .fab /
+     .inspector-* rule; this block only gives the probes something to be. */
+  body { margin: 0; font-family: system-ui, sans-serif; color: #18181b; }
+  .fixture { padding: 16px; min-height: 1800px; }
+  h1 { font-size: 1.1rem; }
+  .fixture-card { border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; }
+  .probe-row {
+    display: block;              /* a block-level probe — the only pickable kind */
+    padding: 28px 16px;
+    margin: 16px 0;
+    background: #eef2ff;
+    border: 1px solid #a5b4fc;
+    border-radius: 6px;
+  }
+  .probe-inline { color: #4338ca; }   /* inline — must never be picked itself */
+  .fixture-spacer { height: 900px; }
+
+  /* DASH-385 — an evidence-carrying panel: the figure carries the node id,
+     the block inside it is what the FAB picks. */
+  .panel { border: 1px dashed #7c3aed; border-radius: 6px; padding: 8px; margin: 16px 0; }
+  .panel-body { display: block; padding: 20px 12px; background: #f5f3ff; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="fixture">
+  <h1>menu-inspector fixture</h1>
+  <div class="fixture-card" id="card">
+    <div class="probe-row" id="probe">drag me <span class="probe-inline" id="inline">inline text</span></div>
+    <div class="fixture-spacer"></div>
+    <div class="probe-row" id="probe2">the far block</div>
+
+    <!-- DASH-385 — the panel figure carries data-evidence-node; the picked
+         element is the block inside it. The island (below) holds the node's
+         effective meta, already display-ready. -->
+    <figure class="panel" id="panel" data-evidence-node="mock-off-calls-waiter/f1/customer-iphone-16">
+      <div class="panel-body" id="panelBody">evidence-carrying panel block</div>
+    </figure>
+
+    <!-- DASH-385 — this node's island is malformed, so the block must fall
+         back to the exact three-line payload and the FAB must keep working. -->
+    <div class="probe-row" id="probe3" data-evidence-node="broken-island/f1/customer">
+      <div class="panel-body" id="panelBody3">malformed-island panel block</div>
+    </div>
+  </div>
+</div>
+
+<!-- DASH-385 — evidence islands. The malformed one comes FIRST so the scan
+     must skip it and keep looking; the real one keys the panel node id.
+     Values are display-ready strings (the renderer resolves + formats at
+     build time); `captured` is the captured page's route, hoisted to the
+     `Captured:` line.
+     DASH-397 — the real island also carries OBJECT facts exactly as the
+     served bundles do: MENU-051 `dom` {path, missing?} and MENU-067
+     `imageSize` {width,height} / `render` {cssWidth,cssHeight,dpr}. The
+     copy payload must render their display forms, never [object Object]. -->
+<script type="application/json" id="evidence-meta-broken">{ this is not json }</script>
+<script type="application/json" id="evidence-meta-mock-off-calls-waiter">{"mock-off-calls-waiter/f1/customer-iphone-16": {"run": "38894073341 · staff-e2e · sha ed2a83c", "test": "T#### · Product behavior / payment / customer flow", "file": "payment-customer-flow.spec.ts : 436", "beat": "mock-off-calls-waiter · passed", "frame": "1/2 entry", "panel": "actor customer · profile iphone-16", "view": "iPhone 16 portrait · 393×852 CSS → 1179×2556 px", "dom": {"path": "html/mock-off-calls-waiter/f1/customer-iphone-16.html"}, "imageSize": {"width": 2319, "height": 1071}, "render": {"cssWidth": 892, "cssHeight": 412, "dpr": 2.6}, "captured": "http://captured-host:3000/payment/customer-flow"}}</script>
+
+<!-- DASH-419 (MENU-075) — the PAGE-LEVEL context island. Exactly one per
+     story page; the FAB reads it by id. It is available to ANY pick (the bare
+     probes above included), and it adds the `Context:` block before
+     Captured:/Evidence: and before HTML:. Facts are already display-ready
+     strings, in generator order — the payload keeps this order. -->
+<script type="application/json" id="evidence-context">{"schema":"evidence-context/v1","facts":{"app":"Example App","suite":"staff-e2e","services":"quillib · menu-api","repo":"/srv/example-app","workspace":"/srv","commit":"https://github.com/example-org/example-app/commit/9a5133efe","manifest":"staff-e2e/manifest.json"}}</script>
+
+<!-- DASH-290b — NO FAB markup. The tool builds its own button + sheet at
+     runtime (inspector/src/inspector.js), so a consumer adds one <script> and
+     one <link> and nothing else. This bare page has no poller and no query
+     parameter: if the FAB shows up here, the injection works. -->
+
+<script src="/inspector.js"></script>
+</body>
+</html>

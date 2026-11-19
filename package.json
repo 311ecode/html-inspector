@@ -1,0 +1,32 @@
+{
+  "name": "html-inspector",
+  "version": "0.4.11",
+  "description": "The HTML Inspector — an in-page inspection FAB (drag a block, copy URL/Path/HTML, paste it on another host) plus a thin Chrome MV3 shell. Distributed as GitHub Release zips and a static registry.",
+  "license": "ISC",
+  "private": false,
+  "files": [
+    "inspector",
+    "extension",
+    "registry"
+  ],
+  "scripts": {
+    "test": "npm run test:protocol && npm run test:artifact && npm run test:site-bridge && npm run test:registry && npm run test:vendor",
+    "test:protocol": "node --test --test-concurrency=1 inspector/test/protocol.test.js",
+    "test:artifact": "node --test test/artifact.test.js",
+    "test:site-bridge": "node --test test/extension-site-bridge.test.js",
+    "test:registry": "node scripts/check-inspector-registry.cjs --immutable && node scripts/check-inspector-registry.cjs --determinism",
+    "test:vendor": "node extension/tools/sync-vendor.mjs --check",
+    "test:ui": "playwright test --project=inspector",
+    "registry:check": "node scripts/publish-inspector.cjs",
+    "registry:write": "node scripts/publish-inspector.cjs --write",
+    "sync:vendor": "node extension/tools/sync-vendor.mjs",
+    "release": "node scripts/release.cjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.61.0",
+    "sass": "^1.101.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

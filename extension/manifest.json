@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "HTML Inspector",
+  "version": "0.1.23",
+  "description": "On-demand menu inspector: injects the published FAB into the current page.",
+  "minimum_chrome_version": "102",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "clipboardWrite"
+  ],
+  "background": {
+    "service_worker": "src/background.js"
+  },
+  "action": {
+    "default_title": "Pick an element"
+  },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Alt+Shift+I"
+      },
+      "description": "Inject the menu inspector into the current page"
+    }
+  }
+}

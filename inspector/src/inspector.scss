@@ -1,0 +1,625 @@
+// DASH-290b §4 — the package stylesheet stands alone. It is compiled into the
+// registry's `inspector.css` and served on its own, so it must render on a
+// page that has NONE of the dashboard's custom properties. Every value it
+// reads is therefore a self-contained default defined right here (the
+// pre-extraction build pulled these from the dashboard's styles/_vars.scss);
+// no `@use 'vars'`/`@use 'theme'` and no host load path.
+//
+// Dark/light comes from the OS preference ONLY (`prefers-color-scheme`), never
+// from a host-applied `.theme-dark`/`.theme-light` class — a page that has
+// never heard of the dashboard's theme toggle still gets a correct sheet.
+$bg:        #f4f4f5;
+$text:      #18181b;
+$muted:     #71717a;
+$border:    #e4e4e7;
+$green:     #22c55e;
+
+// ── DASH-037 — developer-tools FAB + bottom sheet + inspect overlay ────────
+// Body-level fixed elements (never inside .container or any section → exempt
+// from the DASH-008 layout ruler, which only checks registered section
+// children). Light styles live here; dark overrides via the repo's
+// dark-variant mixin at the bottom (same convention as styles/_log.scss).
+// DASH-507 — the inspector is injected into pages it does not own (DASH-290b),
+// so its chrome sits in the TOP layer: a host page's own FAB at z 900+ used to
+// paint over the settled ✕/📷/📋/MD. Base order is unchanged, only the values
+// moved (capture stays at 890 — Inspect-mode page dragging stays under page
+// modals, DASH-276). A page that also claims the ceiling *and* appends after
+// the bundle can still win; native top-layer dialogs cannot be beaten at all.
+// z-index stack (DASH-037 Decision 9): capture 890, overlay/tag 2147483000,
+// FAB 2147483100,
+// dismiss ✕ 941 (above the backdrop — DASH-082), backdrop 940, sheet 950,
+// toast 960. DASH-083: modal overlays (1000/2000) used to cover the FAB when
+// open — the inspector tool now toggles body.fab-modal-open while a modal is up,
+// and the block below lifts the whole suite above z 2000 (same relative order).
+// DASH-276: capture + overlay/tag used to be 800/801, i.e. UNDER the page's
+// section rail (z 880, styles/_rail.scss) — a pull-the-FAB drop on the nav row
+// then copied correctly but painted its green fill and breadcrumb chip behind
+// the rail's opaque background, so the nav looked like it never latched. The
+// whole inspection chrome now sits above 880 and still below the FAB (900).
+
+// ── FAB (offtube style: bottom-right, safe-area aware) ───────────────────
+.fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 2px solid #16a34a; // accent rim (green-600) so the green reads on any background
+  background: $green;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+  z-index: 2147483100;
+  transition: transform 0.1s;
+  // Gesture hygiene (offtube): no tap-delay/zoom, no glyph selection, no iOS
+  // callout while holding. DASH-065: `none` (not `manipulation`) so the
+  // pull-the-FAB drag gets raw pointer moves — the browser must never claim
+  // the gesture for scrolling/zooming (the FAB is fixed, so taps are safe).
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+
+  svg {
+    width: 28px;
+    height: 28px;
+    display: block;
+  }
+
+  &:active { transform: scale(0.94); }
+
+  &.hidden { display: none; }
+
+  // DASH-065 — pulled state: the FAB is a grabbed picker. `.fab.fab--dragging`
+  // (not `.fab--dragging`) so it out-specifies the `:active` shrink above.
+  &.fab--dragging {
+    transition: none;
+    transform: scale(1.08);
+    cursor: grabbing;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index: 2147483101;
+  }
+}
+
+// DASH-041 — the FAB circle carries the collected-snapshot count (red so it
+// pops on the green FAB); hidden while nothing is collected.
+.fab-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 20px;
+  text-align: center;
+  box-sizing: border-box;
+
+  &[hidden] { display: none; }
+}
+
+// ── Bottom sheet ────────────────────────────────────────────────────────
+.fab-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 2147483140;
+
+  &.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+.fab-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #fff;
+  border-top: 1px solid $border;
+  border-radius: 16px 16px 0 0;
+  padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+  z-index: 2147483150;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  box-sizing: border-box;
+  max-height: 90vh; // on short/landscape phones the sheet scrolls instead of leaving the top of the screen
+  overflow-y: auto;
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.45);
+
+  &.open { transform: translateY(0); }
+}
+
+.fab-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid $border;
+}
+
+.fab-sheet-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: $text;
+}
+
+.fab-sheet-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  color: $muted;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+
+  &:hover { background: $bg; }
+}
+
+.fab-sheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 4px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+
+  // DASH-037 Design 1: the Inspect row exists in the DOM but is shown only
+  // when ?dev=1 is active — the author display:flex above would beat the UA
+  // [hidden] rule, so hide it explicitly.
+  &[hidden] { display: none; }
+}
+
+.fab-sheet-row-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.fab-sheet-row-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: $text;
+}
+
+.fab-sheet-row-hint {
+  font-size: 0.75rem;
+  color: $muted;
+
+  code {
+    background: $bg;
+    border: 1px solid $border;
+    border-radius: 4px;
+    padding: 0 4px;
+    font-size: 0.7rem;
+  }
+}
+
+// ── DASH-040 — paste inspection rows ──────────────────────────────────
+.fab-sheet-divider {
+  height: 1px;
+  background: $border;
+  margin: 8px 0 2px;
+}
+
+.fab-sheet-action {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid $border;
+  border-radius: 8px;
+  background: $bg;
+  color: $text;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s;
+
+  &:hover { border-color: $green; }
+  &:active { transform: scale(0.99); }
+}
+
+.fab-sheet-hint {
+  font-size: 0.72rem;
+  color: $muted;
+  padding: 0 4px 6px;
+}
+
+.fab-sheet-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  &[hidden] { display: none; }
+
+  textarea {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    padding: 8px;
+    border: 1px solid $border;
+    border-radius: 8px;
+    background: $bg;
+    color: $text;
+    resize: vertical;
+    min-height: 72px;
+  }
+}
+
+.fab-sheet-snapshots {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0 0;
+
+  &[hidden] { display: none; }
+
+  .fab-sheet-action {
+    width: auto;
+    padding: 6px 10px;
+    font-size: 0.78rem;
+  }
+}
+
+.fab-sheet-snapshots-count {
+  font-size: 0.78rem;
+  color: $muted;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// Switch — the repo toggle pattern from styles/_tunnel.scss (.tunnel-switch +
+// .tunnel-slider), with the checked state in the brand green instead of blue.
+.insp-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+}
+
+.insp-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: #cbd5e1;
+  border-radius: 22px;
+  transition: background 0.2s;
+
+  &::before {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    left: 2px;
+    bottom: 2px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+}
+
+.insp-switch input:checked + .insp-slider {
+  background: $green;
+}
+
+.insp-switch input:checked + .insp-slider::before {
+  transform: translateX(18px);
+}
+
+// ── Inspect mode ─────────────────────────────────────────────────────────
+// The capture layer is created by the inspector tool (once, at boot) and shown
+// by toggling `body.inspecting`. It swallows ALL pointer events while
+// inspecting; `touch-action: none` is the critical mobile bit — a finger-drag
+// never scrolls or zooms the page underneath.
+.inspector-capture {
+  position: fixed;
+  inset: 0;
+  // DASH-276 — above the section rail (880): the rail's links are
+  // `pointer-events: auto`, so at 800 the nav swallowed an Inspect-mode press
+  // that started on it. Still under the FAB (900), so tapping the FAB to open
+  // the sheet keeps working while inspecting.
+  z-index: 890;
+  touch-action: none;
+  display: none; // children (overlay/tag) hide with it when not inspecting
+}
+
+body.inspecting .inspector-capture {
+  display: block;
+}
+
+.inspector-overlay {
+  position: fixed;
+  display: none;
+  pointer-events: none;
+  background: rgba(34, 197, 94, 0.25); // live green fill …
+  outline: 2px solid #22c55e;           // … + outline, as the finger pulls
+  border-radius: 4px;
+  z-index: 2147483000; // DASH-507 — top layer, above any host page chrome
+}
+
+.inspector-tag {
+  position: fixed;
+  display: none;
+  pointer-events: none;
+  z-index: 2147483000; // DASH-507 — same top layer as the fill
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #18181b;
+  color: #4ade80;
+  border: 1px solid #22c55e;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+// DASH-082 — the ✕ that removes a SETTLED highlight (post-copy/paste pick —
+// never mid-drag: the inspector tool shows it only while the overlay is locked).
+// A white circle whose center sits ON the overlay's top-right corner, so ~¾
+// of the disc hangs OUTSIDE the green fill ("not an inside X") and reads as
+// a dismiss badge on the page, not chrome over the copied block. js positions
+// it (inline left/top) and toggles display. The overlay is pointer-events:
+// none — this button re-enables them. z 941: above the capture layer (800)
+// AND the sheet backdrop (940) so a paste highlight's ✕ stays clickable while
+// the sheet stays open (the user watches the count grow) — below the FAB's
+// chrome and the sheet itself (900/950). Same white/green family as the tag.
+.inspector-x {
+  position: fixed;
+  display: none; // js shows it only for a locked highlight (inline display: flex)
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #22c55e; // echo the highlight outline
+  border-radius: 50%;
+  background: #fff;
+  color: #15803d;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483141;
+
+  &:hover { background: #f0fdf4; }
+  &:active { transform: scale(0.92); }
+
+  &:focus-visible {
+    outline: 2px solid #16a34a;
+    outline-offset: 2px;
+  }
+}
+
+// DASH-469 — the 📷 that captures a SETTLED pick as a PNG (host mode only;
+// js creates it only when the extension's bridge exists at boot). The exact
+// DASH-082 geometry MIRRORED to the overlay's top-LEFT corner: a 28 px circle
+// whose center sits on the corner, so ~¾ of the disc hangs outside the fill.
+// Same border/shadow/z family as the ✕; js positions it (inline left/top) and
+// toggles display for locked highlights only.
+.inspector-camera {
+  position: fixed;
+  display: none; // js shows it only for a locked highlight (inline display: flex)
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 2px solid #22c55e; // echo the highlight outline
+  border-radius: 50%;
+  background: #fff;
+  color: #15803d;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483141;
+
+  &:hover { background: #f0fdf4; }
+  &:active { transform: scale(0.92); }
+
+  &:focus-visible {
+    outline: 2px solid #16a34a;
+    outline-offset: 2px;
+  }
+}
+
+// DASH-469 §2.5 — the 📋 HTML pill under the 📷: after an image copy the
+// clipboard holds a PNG, and this re-copies the SAME payload block. Same
+// white/green family and z as the ✕/📷; auto width, 22 px tall.
+.inspector-text {
+  position: fixed;
+  display: none; // js shows it only for a locked highlight (inline display: flex)
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 8px;
+  border: 2px solid #22c55e;
+  border-radius: 999px;
+  background: #fff;
+  color: #15803d;
+  font-family: inherit;
+  font-size: 0.68rem;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483141;
+
+  &:hover { background: #f0fdf4; }
+  &:active { transform: scale(0.96); }
+
+  &:focus-visible {
+    outline: 2px solid #16a34a;
+    outline-offset: 2px;
+  }
+}
+
+// DASH-499 — the MD pill under the 📋 HTML pill: the settled pick's third,
+// one-way Markdown output. The box, typography, colours, shadow and z are
+// IDENTICAL to .inspector-text (ticket §2); only the position differs — js
+// hangs it 4 px under the HTML pill, or under the 📷 slot's anchor when the
+// capture pair is absent.
+.inspector-md {
+  position: fixed;
+  display: none; // js shows it only for a locked highlight (inline display: flex)
+  box-sizing: border-box;
+  height: 22px;
+  padding: 0 8px;
+  border: 2px solid #22c55e;
+  border-radius: 999px;
+  background: #fff;
+  color: #15803d;
+  font-family: inherit;
+  font-size: 0.68rem;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  align-items: center;
+  justify-content: center;
+  z-index: 2147483141;
+
+  &:hover { background: #f0fdf4; }
+  &:active { transform: scale(0.96); }
+
+  &:focus-visible {
+    outline: 2px solid #16a34a;
+    outline-offset: 2px;
+  }
+}
+
+.inspector-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px)); // above the FAB
+  transform: translateX(-50%) translateY(8px);
+  z-index: 2147483160;
+  background: #18181b;
+  color: #d4d4d8;
+  border: 1px solid #22c55e;
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  max-width: 85vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+// ── DASH-083 — the FAB suite above an open modal ─────────────────────────
+// The dashboard's full-screen overlays stack at z 1000 (.chart-modal,
+// .chart-modal-overlay — chart/action/typed-confirm modals) and z 2000
+// (.log-overlay — log viewer, selective restore). While the inspector tool sees
+// one open it sets body.fab-modal-open, and this block lifts the whole FAB
+// suite above them so pull-the-FAB copy works on the modal's own content and
+// the highlight/✕/toast stay visible and reachable. Every value keeps the
+// base stack's relative order (capture 890 stays — Inspect-mode page dragging
+// is untouched); with no modal open none of this applies.
+body.fab-modal-open {
+  .inspector-overlay,
+  .inspector-tag { z-index: 2147483200; } // modal tier stays above the base tier
+
+  .fab { z-index: 2147483300; }
+  .fab.fab--dragging { z-index: 2147483301; }
+
+  .fab-backdrop { z-index: 2147483340; }
+  .inspector-x { z-index: 2147483341; }
+  .inspector-camera { z-index: 2147483341; }
+  .inspector-text { z-index: 2147483341; }
+  .inspector-md { z-index: 2147483341; }
+  .fab-sheet { z-index: 2147483350; }
+  .inspector-toast { z-index: 2147483360; }
+}
+
+// ── Dark mode (OS preference only — DASH-290b §4) ────────────────────────
+@media (prefers-color-scheme: dark) {
+  .fab-sheet {
+    background: #27272a;
+    border-top-color: #3f3f46;
+  }
+
+  .fab-sheet-header { border-bottom-color: #3f3f46; }
+  .fab-sheet-title { color: #e4e4e7; }
+
+  .fab-sheet-close {
+    color: #a1a1aa;
+
+    &:hover { background: #3f3f46; }
+  }
+
+  .fab-sheet-row-label { color: #e4e4e7; }
+  .fab-sheet-row-hint { color: #a1a1aa; }
+
+  .fab-sheet-row-hint code {
+    background: #18181b;
+    border-color: #3f3f46;
+    color: #a1a1aa;
+  }
+
+  .fab-sheet-divider { background: #3f3f46; }
+
+  .fab-sheet-action {
+    background: #27272a;
+    border-color: #3f3f46;
+    color: #e4e4e7;
+
+    &:hover { border-color: #22c55e; }
+  }
+
+  .fab-sheet-hint { color: #a1a1aa; }
+
+  .fab-sheet-fallback textarea {
+    background: #18181b;
+    border-color: #3f3f46;
+    color: #d4d4d8;
+  }
+
+  .fab-sheet-snapshots-count { color: #a1a1aa; }
+
+  .insp-slider { background: #52525b; }
+}
