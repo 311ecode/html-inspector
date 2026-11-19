@@ -1,10 +1,24 @@
 # INSP-011 — manual npm release script (owner-run; the agent has no npm credentials)
 
-**Project:** html-inspector · **Status:** NEW (implementing) · **Created:** 2026-11-19 ·
+**Project:** html-inspector · **Status:** DONE (landed 2026-11-19; publish step remains owner-manual) · **Created:** 2026-11-19 ·
 **Origin:** user — "we should have a script called release to npm… standalone one, and I will
 have to do it manually myself, because you don't have the right".
 **Related:** INSP-001/008/009/010 (registry + release flow), `inspector/package.json`
 (`menu-inspector`), the manual-only push policy in `../rules/git.md`.
+
+## 0. Landed — 2026-11-19
+
+| Fact | Value |
+|---|---|
+| Script | `scripts/release-npm.cjs` · `npm run release:npm` / `npm run release:npm:dry` |
+| Dry run (verified) | preflight green (clean tree, `inspector-v0.4.15` local+remote, registry == tag); staged `menu-inspector@0.4.15`; `npm pack --dry-run` → 5 files, **37.3 kB** tarball, shasum `2734ecc6…`; `inspector.js` 116,102 B `sha256:fba52144…`, `inspector.css` 11,496 B `sha256:3d1feef8…` |
+| Auth gate (verified) | real run reaches `npm whoami` → 401 → exits 2 with the `npm login` instruction; **nothing published**; the script never reads/stores/prints a token |
+| Package | `menu-inspector`, built from `registry/inspector/<version>/` (not `inspector/src`), `main/browser/unpkg/jsdelivr` = `inspector.js`, `style` = `inspector.css`, `publishConfig.access: public` |
+| npm state | `menu-inspector@0.4.15` is **not** on npm yet; the owner runs `npm login && npm run release:npm` |
+| Repo wiring | `release:npm` + `release:npm:dry` scripts; `.npm-stage/` gitignored; AGENTS + README document the owner-only manual flow; CI never publishes |
+
+The publish itself is deliberately not performed here — this session has no npm credentials (the
+agent cannot log in), which is exactly the user's constraint.
 
 ## Summary
 
