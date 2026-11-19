@@ -222,6 +222,24 @@ test('📷 captures the settled block when the shared surface is this tab', asyn
     expect(errors).toEqual([]);
 });
 
+test('⬇ downloads the settled block as a named PNG (display tier)', async ({ page, context }) => {
+    const errors = await openEmbed(page, context);
+    await stubDisplayCapture(page, 1280, 800);
+    await pickFirstBlock(page);
+
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('.inspector-download').click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/^html-inspector-first-copy-\d{8}-\d{4}\.png$/);
+    expect(await download.path()).toBeTruthy();
+    await expect(page.locator('.inspector-toast')).toContainText('⬇ Saved html-inspector-first-copy-');
+
+    // downloading does not disturb the settled pick
+    await expect(page.locator('.inspector-overlay')).toBeVisible();
+    await expect(page.locator('.inspector-download')).toBeVisible();
+    expect(errors).toEqual([]);
+});
+
 test('📷 refuses a surface that is not this tab (no shifted crop)', async ({ page, context }) => {
     await openEmbed(page, context);
     await stubDisplayCapture(page, 1000, 300); // a different surface's shape

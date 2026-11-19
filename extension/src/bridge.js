@@ -124,7 +124,7 @@
         return savePng(blob);
     }
 
-    function cropAndCopy(dataUrl, rect) {
+    function cropAndCapture(dataUrl, rect) {
         var dpr = rect && rect.dpr > 0 ? rect.dpr : (window.devicePixelRatio || 1);
         var plan = cropRect(rect, { width: window.innerWidth, height: window.innerHeight }, dpr);
         if (!plan) return Promise.reject(new Error('outside the viewport'));
@@ -143,15 +143,20 @@
                 } finally {
                     if (bitmap.close) bitmap.close();
                 }
-            })
-            .then(copyPng);
+            });
     }
 
     // The bundle awaits this; resolving means "on the clipboard", rejecting
     // means "nothing was copied" (the error is the toast text).
     window.__htmlInspectorCapture = function (rect) {
+        return window.__htmlInspectorCaptureBlob(rect).then(copyPng);
+    };
+
+    // INSP-010 — the download pill asks for the SAME cropped PNG without
+    // touching the clipboard: resolve with the Blob, never with a copy.
+    window.__htmlInspectorCaptureBlob = function (rect) {
         return requestDataUrl(rect).then(function (dataUrl) {
-            return cropAndCopy(dataUrl, rect);
+            return cropAndCapture(dataUrl, rect);
         });
     };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

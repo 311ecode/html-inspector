@@ -282,13 +282,13 @@ test('DASH-507 site mode: the settled pick reflows on scroll, its chrome hides w
   const overlayTop = () => page.locator('.inspector-overlay').evaluate((el) => el.getBoundingClientRect().top);
   const probeTop = () => probe.evaluate((el) => el.getBoundingClientRect().top);
   const chromeDisplay = () => page.evaluate(() => {
-    const sels = ['.inspector-overlay', '.inspector-tag', '.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md'];
+    const sels = ['.inspector-overlay', '.inspector-tag', '.inspector-x', '.inspector-camera', '.inspector-download', '.inspector-text', '.inspector-md'];
     return sels.map((s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).display : 'absent'; });
   });
 
   async function expectControlsInsideAndClickable(label) {
     const vp = page.viewportSize();
-    for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md']) {
+    for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-download', '.inspector-text', '.inspector-md']) {
       const r = await page.locator(sel).evaluate((el) => {
         const b = el.getBoundingClientRect();
         const hit = document.elementFromPoint(b.left + b.width / 2, b.top + b.height / 2);
@@ -564,6 +564,7 @@ async function expectHostChromeGone(page) {
   await expect(page.locator('.inspector-tag')).toHaveCount(0);
   await expect(page.locator('.inspector-x')).toHaveCount(0);
   await expect(page.locator('.inspector-camera')).toHaveCount(0);
+  await expect(page.locator('.inspector-download')).toHaveCount(0);
   await expect(page.locator('.inspector-text')).toHaveCount(0);
   await expect(page.locator('.inspector-md')).toHaveCount(0);
   await expect(page.locator('.inspector-toast')).toHaveCount(0);
@@ -621,6 +622,7 @@ test('DASH-478 host mode: the target icon is visible, a tap toasts (never the sh
   await expect(page.locator('.inspector-toast')).toContainText('📋 Copied div#probe.probe-row');
   await expect(page.locator('.inspector-x')).toBeVisible();
   await expect(page.locator('.inspector-camera')).toHaveCount(0);
+  await expect(page.locator('.inspector-download')).toHaveCount(0);
   await expect(page.locator('.inspector-text')).toHaveCount(1);
   await expect(page.locator('.inspector-text')).toBeVisible();
   expect(box.width).toBeGreaterThan(0);
@@ -659,6 +661,19 @@ async function stubBridge(page, mode) {
       window.__captureCalls.push(rect);
       if (mode === 'reject') return Promise.reject(new Error('capture nope'));
       return Promise.resolve('data:image/png;base64,AAAA');
+    };
+    // INSP-010 — the download pill asks for the Blob, never a clipboard copy.
+    window.__htmlInspectorCaptureBlob = function (rect) {
+      window.__captureCalls.push(rect);
+      if (mode === 'reject') return Promise.reject(new Error('capture nope'));
+      return new Promise(function (resolve) {
+        var c = document.createElement('canvas');
+        c.width = 4; c.height = 4;
+        var ctx = c.getContext('2d');
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(0, 0, 4, 4);
+        c.toBlob(function (blob) { resolve(blob); }, 'image/png');
+      });
     };
   }, mode);
 }
@@ -713,6 +728,29 @@ test('DASH-469 host mode: a rejected bridge toasts the reason and stays settled,
   await expectHostChromeGone(page);
 });
 
+test('INSP-010 host mode: ⬇ downloads the bridged PNG and stays settled', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: BASE });
+  await stubBridge(page, 'resolve');
+  await page.goto(BASE + '/host');
+
+  await hostSettleProbe(page);
+  await expect(page.locator('.inspector-download')).toBeVisible();
+  await expect(page.locator('.inspector-overlay')).toBeVisible();
+
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('.inspector-download').click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^html-inspector-probe-\d{8}-\d{4}\.png$/);
+  await expect(page.locator('.inspector-toast')).toContainText('⬇ Saved html-inspector-probe-');
+
+  // Download does not exit the settled pick, and the controls stay.
+  await expect(page.locator('.inspector-overlay')).toBeVisible();
+  await expect(page.locator('.inspector-download')).toBeVisible();
+  await expect(page.locator('.inspector-camera')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expectHostChromeGone(page);
+});
+
 // DASH-469 §A — the owner's exact bar: a 2000×2000 block at top:-600px;
 // left:-600px puts BOTH top corners far off-screen. Every corner control must
 // be fully inside the viewport (≥ 2 px margin) and hit-testable, and must stay
@@ -747,7 +785,7 @@ test('DASH-469 host mode: ✕/📷/📋 stay inside the viewport and hit-testabl
 
   async function expectControlsInsideAndClickable() {
     const vp = page.viewportSize();
-    for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md']) {
+    for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-download', '.inspector-text', '.inspector-md']) {
       const r = await controlState(sel);
       expect(r.left, sel + ' left margin').toBeGreaterThanOrEqual(2);
       expect(r.top, sel + ' top margin').toBeGreaterThanOrEqual(2);
@@ -931,6 +969,7 @@ test('DASH-510 host mode (no capture bridge): the HTML pill takes the 📷 slot,
   // No bridge at boot → no 📷. DASH-510: the 📋 HTML pill is unconditional,
   // so it takes the 📷 slot and MD hangs under it.
   await expect(page.locator('.inspector-camera')).toHaveCount(0);
+  await expect(page.locator('.inspector-download')).toHaveCount(0);
   await expect(page.locator('.inspector-text')).toHaveCount(1);
   await expect(page.locator('.inspector-text')).toBeVisible();
   await expect(page.locator('.inspector-x')).toBeVisible();
@@ -1074,7 +1113,7 @@ test('DASH-509: a host-page FAB in the corner cannot cover the inspector chrome 
 
   // The four interactive controls own the top layer AND the hit at their
   // centres — the host page's z 999999 FAB is not in their way.
-  for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md']) {
+  for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-download', '.inspector-text', '.inspector-md']) {
     const state = await inspectorControlState(page, sel);
     expect(state.display, sel + ' is shown').not.toBe('none');
     expect(state.zIndex, sel + ' z-index').toBeGreaterThanOrEqual(2147483000);
@@ -1124,7 +1163,7 @@ test('DASH-509: resize re-runs the reflow and re-clamps the settled pick and FAB
   // reading it synchronously (a fast machine passed the sync read; CI did not).
   const settleViolations = async () => {
     const out = [];
-    for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md']) {
+    for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-download', '.inspector-text', '.inspector-md']) {
       const state = await inspectorControlState(page, sel);
       if (state.left < 2) out.push(sel + ' left margin ' + state.left);
       if (state.top < 2) out.push(sel + ' top margin ' + state.top);
@@ -1203,7 +1242,7 @@ test('DASH-509 host mode: the settled pick hides off-screen and restores on scro
   await expect(page.locator('.inspector-overlay')).toBeVisible();
 
   const chromeDisplay = () => page.evaluate(() => {
-    const sels = ['.inspector-overlay', '.inspector-tag', '.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md'];
+    const sels = ['.inspector-overlay', '.inspector-tag', '.inspector-x', '.inspector-camera', '.inspector-download', '.inspector-text', '.inspector-md'];
     return sels.map((s) => { const el = document.querySelector(s); return el ? getComputedStyle(el).display : 'absent'; });
   });
 
@@ -1238,7 +1277,7 @@ test('DASH-509: a lower-right-corner pick clamps and hit-tests every control', a
   await dragFabTo(page, 1240, 780);
   await expect(page.locator('.inspector-overlay')).toBeVisible();
 
-  for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md']) {
+  for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-download', '.inspector-text', '.inspector-md']) {
     const state = await inspectorControlState(page, sel);
     expect(state.display, sel + ' is shown').not.toBe('none');
     expect(state.left, sel + ' left margin').toBeGreaterThanOrEqual(2);
@@ -1343,7 +1382,7 @@ test('DASH-509 keyboard: the ✕ is labelled and Enter dismisses; every control 
   await dragFabTo(page, box.x + box.width / 2, box.y + box.height / 2);
   await expect(page.locator('.inspector-overlay')).toBeVisible();
 
-  for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md']) {
+  for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-download', '.inspector-text', '.inspector-md']) {
     const control = page.locator(sel);
     await expect(control, sel + ' is a button').toHaveJSProperty('tagName', 'BUTTON');
     await expect(control, sel + ' has an aria-label').toHaveAttribute('aria-label', /./);
@@ -1392,7 +1431,7 @@ test('DASH-509: at 320px the tag stays inside and the chrome adds no horizontal 
 
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(321);
 
-  for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md']) {
+  for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-download', '.inspector-text', '.inspector-md']) {
     const state = await inspectorControlState(page, sel);
     expect(state.left, sel + ' left margin at 320px').toBeGreaterThanOrEqual(2);
     expect(state.right, sel + ' right margin at 320px').toBeLessThanOrEqual(vp.width - 2);

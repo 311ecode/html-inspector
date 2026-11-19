@@ -68,7 +68,7 @@ module.exports = {
                 `<link rel="stylesheet" href="${PAGES}/registry/inspector/v1/inspector.css">`,
                 `<script defer src="${PAGES}/registry/inspector/v1/inspector.js"></script>`,
             ],
-            note: 'Copy as image (📷): a plain page can only ask the browser to share a tab — pick THIS tab; other tabs and the whole screen are refused (the crop is viewport-relative, and the extension captures silently).',
+            note: 'Copy as image (📷): a plain page can only ask the browser to share a tab — pick THIS tab; other tabs and the whole screen are refused (the crop is viewport-relative, and the extension captures silently). The ⬇ pill saves that same capture as a PNG file instead of copying it.',
             beats: [
                 { scene: 'embed', shot: 'drag', caption: 'Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb.' },
                 { scene: 'embed', shot: 'copied', caption: 'Lift: the payload is on the clipboard (URL, path and outerHTML were just copied).' },

@@ -476,7 +476,7 @@ body.inspecting .inspector-capture {
 // whose center sits on the corner, so ~¾ of the disc hangs outside the fill.
 // Same border/shadow/z family as the ✕; js positions it (inline left/top) and
 // toggles display for locked highlights only.
-.inspector-camera {
+.inspector-camera, .inspector-download {
   position: fixed;
   display: none; // js shows it only for a locked highlight (inline display: flex)
   box-sizing: border-box;
@@ -502,6 +502,11 @@ body.inspecting .inspector-capture {
     outline: 2px solid #16a34a;
     outline-offset: 2px;
   }
+}
+
+.inspector-download:disabled {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 // DASH-469 §2.5 — the 📋 HTML pill under the 📷: after an image copy the

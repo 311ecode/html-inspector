@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "package": "menu-inspector",
+  "version": "0.4.15",
+  "protocolVersion": 3,
+  "publishedAt": "2026-11-19T23:13:54+01:00",
+  "files": [
+    {
+      "name": "inspector.js",
+      "bytes": 116102,
+      "sha256": "fba52144a2cf603658deaeadec051d0d534f2ed340d04265ec6e31183ec04caa"
+    },
+    {
+      "name": "inspector.css",
+      "bytes": 11496,
+      "sha256": "3d1feef828aeed6798c85fa7817b9baf0d3d218989df37d23acaaddb5dac1431"
+    }
+  ]
+}

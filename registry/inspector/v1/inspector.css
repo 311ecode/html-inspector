@@ -401,7 +401,7 @@ body.inspecting .inspector-capture {
   outline-offset: 2px;
 }
 
-.inspector-camera {
+.inspector-camera, .inspector-download {
   position: fixed;
   display: none;
   box-sizing: border-box;
@@ -420,15 +420,20 @@ body.inspecting .inspector-capture {
   justify-content: center;
   z-index: 2147483141;
 }
-.inspector-camera:hover {
+.inspector-camera:hover, .inspector-download:hover {
   background: #f0fdf4;
 }
-.inspector-camera:active {
+.inspector-camera:active, .inspector-download:active {
   transform: scale(0.92);
 }
-.inspector-camera:focus-visible {
+.inspector-camera:focus-visible, .inspector-download:focus-visible {
   outline: 2px solid #16a34a;
   outline-offset: 2px;
+}
+
+.inspector-download:disabled {
+  opacity: 0.6;
+  cursor: progress;
 }
 
 .inspector-text {
