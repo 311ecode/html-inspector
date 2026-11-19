@@ -206,6 +206,42 @@
   display: none;
 }
 
+.fab-sheet-intro-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: #71717a;
+}
+
+.fab-sheet-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 10px 4px 2px;
+  font-size: 0.72rem;
+  color: #71717a;
+}
+.fab-sheet-links a {
+  color: #18181b;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.fab-sheet-links a:hover {
+  color: #22c55e;
+}
+.fab-sheet-links[hidden] {
+  display: none;
+}
+
+.fab-sheet-version {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #71717a;
+}
+.fab-sheet-version[hidden] {
+  display: none;
+}
+
 .fab-sheet-fallback {
   display: flex;
   flex-direction: column;

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "HTML Inspector",
-  "version": "0.4.12",
+  "version": "0.4.13",
   "description": "On-demand menu inspector: injects the published FAB into the current page.",
   "minimum_chrome_version": "102",
   "permissions": [
