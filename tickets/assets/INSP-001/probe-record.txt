@@ -1,0 +1,30 @@
+== 1. create repo 311ecode/html-inspector-release-probe-1795109893 (public) ==
+POST /user/repos -> HTTP 201
+repo id: 1464468565
+== 2. build the committed distribution tree (text only) ==
+260K	/tmp/probe-repo.pUmm0g/registry
+== 3. git init, commit, tag, push over SSH ==
+pushed main + v0.4.11; remote tips:
+652d12a0721ad4122f44c8023544d2c3351c8a77 HEAD
+652d12a0721ad4122f44c8023544d2c3351c8a77 refs/heads/main
+652d12a0721ad4122f44c8023544d2c3351c8a77 refs/tags/v0.4.11
+== 4. create the Release for v0.4.11 ==
+POST /releases -> HTTP 201
+release id: 451696633
+== 5. upload the distribution zips + sha256 ==
+upload html-inspector-0.1.22-e0c18ff.zip -> HTTP 201
+upload html-inspector-embed-0.4.11.zip -> HTTP 201
+upload html-inspector-0.1.22-e0c18ff.zip.sha256 -> HTTP 201
+upload html-inspector-embed-0.4.11.zip.sha256 -> HTTP 201
+== 6. verify the published release (names, sizes, hashes) ==
+tag: v0.4.11 | assets: 4
+  html-inspector-0.1.22-e0c18ff.zip               45120 B  state=uploaded
+  html-inspector-0.1.22-e0c18ff.zip.sha256          100 B  state=uploaded
+  html-inspector-embed-0.4.11.zip                 33204 B  state=uploaded
+  html-inspector-embed-0.4.11.zip.sha256             98 B  state=uploaded
+  ✓ html-inspector-0.1.22-e0c18ff.zip round-trip sha256 identical
+  ✓ html-inspector-embed-0.4.11.zip round-trip sha256 identical
+== 7. clean up ==
+DELETE repo -> HTTP 204
+verify gone -> HTTP 404
+PROBE OK

@@ -115,10 +115,13 @@ Contract for the script (`node scripts/release.cjs [--version X.Y.Z] [--dry-run]
    extension `manifest.json` per rule: inspector `X.Y.Z` → extension patch+1 from its own line.
 3. **Regenerate** — `publish-inspector.cjs --write`, then `sync-vendor.mjs` (vendor from `v1/`).
 4. **Build** — via `lib/extension-artifact.js` into `dist/`:
-   - `html-inspector-extension-<extver>.zip` (the MV3 shell, vendor inside)
-   - `html-inspector-embed-<ver>.zip` (`inspector.js`, `inspector.css`, `LICENSE`, `README`)
+   - extension: the builder's own name, `html-inspector-<extver>-<shortSha>.zip` — from
+     `buildArtifact().file` (verified live: `html-inspector-0.1.22-e0c18ff.zip`, 45,120 B;
+     contains `build.json`); do not invent a second name
+   - embed: `html-inspector-embed-<ver>.zip` — ours to name (verified live:
+     `html-inspector-embed-0.4.11.zip`, 33,204 B, `inspector.js` + `inspector.css`)
    - one `.sha256` per zip. Zips must be **deterministic** (fixed mtimes/order; reuse the existing
-     builder's `buildHash`).
+     builder's `buildZip`/`buildHash`; verified: building twice gives identical bytes).
 5. **Commit + tag** — single commit of the version bump + regenerated registry; tag `v<version>`.
 6. **Push** — `git push origin main` and `git push origin v<version>` over SSH
    ([`../rules/git.md`](../../rules/git.md) bypass). No force-push.
@@ -164,6 +167,32 @@ Port these gates, same semantics, from `menu-dashboard/.github/workflows/ci.yml`
 - Genericize the ~5 dashboard literals in the moved tests/fixtures (`/home/imre/dev/...`,
   `311ecode` URLs) — no absolute paths in this repo.
 
+### 7.1 Live probe — mechanics proven end-to-end (2026-11-19)
+
+A throwaway **public** repo (`html-inspector-release-probe-<epoch>`) was driven through the whole
+flow and then deleted. Harness + record: [`tickets/assets/INSP-001/`](../assets/INSP-001/)
+(`probe-release.sh`, `probe-record.txt`). Result:
+
+| Step | Evidence |
+|---|---|
+| create repo (API, classic PAT) | `POST /user/repos` → 201 |
+| push text distribution tree + tag over SSH | registry 0.4.11 + `v1/` + `index.json` (260K), `main` + tag `v0.4.11` on remote |
+| create Release for the tag | `POST /releases` → 201 |
+| upload 2 zips + 2 `.sha256` | 4 × `POST uploads.github.com/.../assets` → 201, `state=uploaded` |
+| user-side download (unauthenticated `browser_download_url`) | both zips round-trip with **identical sha256** |
+| delete + verify | `DELETE` → 204, then `GET` → 404; no leftovers |
+
+Gotchas learned (encode these in `release.cjs`):
+
+1. **Private repos + auth header on the asset URL break the download** — `browser_download_url`
+   redirects to a signed S3 URL and re-sending `Authorization` corrupts it (first probe runs got a
+   hash mismatch). The target repo is public so plain unauthenticated download works; for
+   verification against a private probe, use the API asset endpoint
+   (`/repos/{owner}/{repo}/releases/assets/{id}` + `Accept: application/octet-stream`).
+2. **Fine-grained PAT cannot create repos** (403) — repo creation needs the classic `repo` scope
+   (the shell-state `GITHUB_TEST_TOKEN`), as already recorded in `AGENTS.md`.
+3. Release-asset uploads accept the `.sha256` sidecar as a plain asset — no extra API needed.
+
 ## 8. Consumer handoff (filed as a DASH ticket in `menu-dashboard`, not here)
 
 After the first release exists: point the served-FAB pipeline at this repo instead of the
@@ -196,8 +225,9 @@ and keep asserting the served surface; only the mirror source changes.
 5. GitHub repo `311ecode/html-inspector` is public, `main` pushed (`git ls-remote origin` matches
    local `main`).
 6. Tag `v0.4.11` exists on the remote; its Release carries
-   `html-inspector-extension-0.1.23.zip`, `html-inspector-embed-0.4.11.zip` + `.sha256`; sizes and
-   sha256s match a local rebuild (determinism).
+   `html-inspector-<extver>-<shortSha>.zip` (builder name, e.g. `html-inspector-0.1.22-e0c18ff.zip`)
+   and `html-inspector-embed-0.4.11.zip` + `.sha256`; sizes and sha256s match a local rebuild
+   (determinism) and match an unauthenticated download.
 7. `check-inspector-registry.cjs --release v0.4.11` → pass on that tag.
 8. `extension/manifest.json` version `0.1.23`; no `git rev-list --count` anywhere in the repo
    (`grep -rn 'rev-list' .` → empty).
