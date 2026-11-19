@@ -22,9 +22,20 @@
   pre.cmd code, pre.clip code { background:none; border:0; padding:0; }
   pre.clip { margin:12px 0 0; border-left:3px solid var(--accent); }
   pre.clip::before { content:"clipboard payload, copied live"; display:block; font:11px/1.4 ui-monospace,monospace; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
-  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px; margin:22px 0 8px; }
-  figure.beat { margin:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
-  figure.beat img { display:block; width:100%; height:auto; border-bottom:1px solid var(--line); }
+  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(440px,1fr)); gap:20px; margin:22px 0 8px; }
+  figure.beat { position:relative; margin:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  figure.beat img { display:block; width:100%; height:auto; border-bottom:1px solid var(--line); cursor:zoom-in; }
+  figure.beat img:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+  .zoom-hint { position:absolute; top:10px; right:10px; display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:8px; background:rgba(13,17,23,.72); border:1px solid var(--line); color:var(--text); font:14px/1 ui-monospace,monospace; pointer-events:none; }
+  #lightbox { position:fixed; inset:0; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:3vh 3vw; background:rgba(3,6,10,.86); }
+  #lightbox[hidden] { display:none; }
+  #lightbox .lb-stage { display:flex; align-items:center; justify-content:center; overflow:auto; max-width:94vw; max-height:86vh; }
+  #lightbox img { max-width:94vw; max-height:86vh; background:#fff; border:1px solid var(--line); border-radius:10px; cursor:zoom-in; }
+  #lightbox img.actual { max-width:none; max-height:none; cursor:zoom-out; }
+  #lightbox figcaption { color:var(--muted); font-size:14px; max-width:80ch; text-align:center; }
+  #lbClose { position:fixed; top:16px; right:18px; width:40px; height:40px; border-radius:10px; background:var(--panel); border:1px solid var(--line); color:var(--text); font-size:18px; cursor:pointer; }
+  #lbClose:hover { border-color:var(--accent); }
+  body.lb-open { overflow:hidden; }
   figure.beat figcaption { display:flex; gap:10px; padding:14px 16px; font-size:14px; color:#c9d1d9; }
   figure.beat .num { flex:0 0 auto; font:700 12px/20px ui-monospace,monospace; color:var(--accent); }
   figure.beat pre.clip { margin:12px 16px 16px; font-size:12px; }
@@ -52,7 +63,8 @@
 <p>It is deliberately tiny: a zero-dependency browser script plus a stylesheet. There is no dashboard, no build step, no account. The same bundle is served as a static registry (GitHub Pages) and ships as two zips on GitHub Releases: an embeddable bundle and a Chrome MV3 shell that injects it into any tab on demand.</p>
   
   <div class="strip"><figure class="beat">
-      <img src="assets/01-embed-idle.jpg" alt="Embedded on a plain third-party page: the FAB waits in the corner." loading="lazy">
+      <img src="assets/01-embed-idle.jpg" alt="Embedded on a plain third-party page: the FAB waits in the corner." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 1: Embedded on a plain third-party page: the FAB waits in the corner.">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">1</span>Embedded on a plain third-party page: the FAB waits in the corner.</figcaption>
       
     </figure></div>
@@ -72,25 +84,29 @@
   <pre class="cmd"><code>&lt;link rel=&quot;stylesheet&quot; href=&quot;https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.css&quot;&gt;
 &lt;script defer src=&quot;https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.js&quot;&gt;&lt;/script&gt;</code></pre>
   <div class="strip"><figure class="beat">
-      <img src="assets/02-embed-drag.jpg" alt="Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb." loading="lazy">
+      <img src="assets/02-embed-drag.jpg" alt="Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 2: Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb.">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">2</span>Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb.</figcaption>
       
     </figure>
 <figure class="beat">
-      <img src="assets/03-embed-copied.jpg" alt="Lift: the payload is on the clipboard (URL, path and outerHTML were just copied)." loading="lazy">
+      <img src="assets/03-embed-copied.jpg" alt="Lift: the payload is on the clipboard (URL, path and outerHTML were just copied)." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 3: Lift: the payload is on the clipboard (URL, path and outerHTML were just copied).">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">3</span>Lift: the payload is on the clipboard (URL, path and outerHTML were just copied).</figcaption>
-      <pre class="clip"><code>URL: http://127.0.0.1:37867/embed
+      <pre class="clip"><code>URL: http://127.0.0.1:46515/embed
 Path: article#first-block.card &gt; p#first-copy
 HTML:
 &lt;p id=&quot;first-copy&quot;&gt;The inspector should be able to pick this article and copy its HTML.&lt;/p&gt;</code></pre>
     </figure>
 <figure class="beat">
-      <img src="assets/04-embed-sheet.jpg" alt="Tap instead of drag to open the sheet: collected snapshots and the inspection switches." loading="lazy">
+      <img src="assets/04-embed-sheet.jpg" alt="Tap instead of drag to open the sheet: collected snapshots and the inspection switches." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 4: Tap instead of drag to open the sheet: collected snapshots and the inspection switches.">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">4</span>Tap instead of drag to open the sheet: collected snapshots and the inspection switches.</figcaption>
       
     </figure>
 <figure class="beat">
-      <img src="assets/05-embed-mobile.jpg" alt="The same embed on a 390 px phone — the FAB is always visible and safe-area aware." loading="lazy">
+      <img src="assets/05-embed-mobile.jpg" alt="The same embed on a 390 px phone — the FAB is always visible and safe-area aware." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 5: The same embed on a 390 px phone — the FAB is always visible and safe-area aware.">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">5</span>The same embed on a 390 px phone — the FAB is always visible and safe-area aware.</figcaption>
       
     </figure></div>
@@ -114,9 +130,10 @@ HTML:
   &quot;run&quot;:&quot;39120487731 · orders-e2e&quot;, &quot;dom&quot;:{&quot;path&quot;:&quot;html/orders/42.html&quot;}}}
 &lt;/script&gt;</code></pre>
   <div class="strip"><figure class="beat">
-      <img src="assets/06-embed-metadata.jpg" alt="The paragraph inside an annotated card: Context, Captured and Evidence land before the HTML." loading="lazy">
+      <img src="assets/06-embed-metadata.jpg" alt="The paragraph inside an annotated card: Context, Captured and Evidence land before the HTML." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 6: The paragraph inside an annotated card: Context, Captured and Evidence land before the HTML.">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">6</span>The paragraph inside an annotated card: Context, Captured and Evidence land before the HTML.</figcaption>
-      <pre class="clip"><code>URL: http://127.0.0.1:37867/embed-metadata
+      <pre class="clip"><code>URL: http://127.0.0.1:46515/embed-metadata
 Path: article#order-card.card[data-env=&quot;staging&quot;] &gt; p#meta-copy.total
 Context:
   app: Example Shop
@@ -149,24 +166,28 @@ HTML:
 2. chrome://extensions  -&gt;  Developer mode  -&gt;  Load unpacked  -&gt;  the unzipped folder
 3. Press Alt+Shift+I on any page</code></pre>
   <div class="strip"><figure class="beat">
-      <img src="assets/07-extension-bare.jpg" alt="A bare page before the shortcut: no inspector, nothing injected." loading="lazy">
+      <img src="assets/07-extension-bare.jpg" alt="A bare page before the shortcut: no inspector, nothing injected." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 7: A bare page before the shortcut: no inspector, nothing injected.">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">7</span>A bare page before the shortcut: no inspector, nothing injected.</figcaption>
       
     </figure>
 <figure class="beat">
-      <img src="assets/08-extension-injected.jpg" alt="After the shortcut: the extension injected the bundle and the FAB appears." loading="lazy">
+      <img src="assets/08-extension-injected.jpg" alt="After the shortcut: the extension injected the bundle and the FAB appears." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 8: After the shortcut: the extension injected the bundle and the FAB appears.">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">8</span>After the shortcut: the extension injected the bundle and the FAB appears.</figcaption>
       
     </figure>
 <figure class="beat">
-      <img src="assets/09-extension-pick.jpg" alt="The injected picker highlights the block — the same pick loop as the embed." loading="lazy">
+      <img src="assets/09-extension-pick.jpg" alt="The injected picker highlights the block — the same pick loop as the embed." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 9: The injected picker highlights the block — the same pick loop as the embed.">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">9</span>The injected picker highlights the block — the same pick loop as the embed.</figcaption>
       
     </figure>
 <figure class="beat">
-      <img src="assets/10-extension-copied.jpg" alt="Lift: the copied payload comes from the injected bundle, not from the page." loading="lazy">
+      <img src="assets/10-extension-copied.jpg" alt="Lift: the copied payload comes from the injected bundle, not from the page." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 10: Lift: the copied payload comes from the injected bundle, not from the page.">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">10</span>Lift: the copied payload comes from the injected bundle, not from the page.</figcaption>
-      <pre class="clip"><code>URL: http://127.0.0.1:37867/
+      <pre class="clip"><code>URL: http://127.0.0.1:46515/
 Path: article#first-block.card &gt; p#first-copy
 HTML:
 &lt;p id=&quot;first-copy&quot;&gt;The inspector should be able to pick this article and copy its HTML.&lt;/p&gt;</code></pre>
@@ -179,7 +200,47 @@ HTML:
 # latest, channel paths and per-file sha256 for every published version</code></pre>
   
 </section>
-<footer>Generated from the live code by <code>npm run docs</code> (<code>scripts/docs.cjs</code>). The frames above are real browser runs of the committed registry and the unpacked extension — regenerate after changing the FAB, the extension or the registry.<br>Generated from commit <code>1153062</code>.</footer>
+<footer>Generated from the live code by <code>npm run docs</code> (<code>scripts/docs.cjs</code>). The frames above are real browser runs of the committed registry and the unpacked extension — regenerate after changing the FAB, the extension or the registry.<br>Generated from commit <code>009a114</code>.</footer>
 </main>
+<div id="lightbox" hidden>
+  <button id="lbClose" type="button" aria-label="Close enlarged frame">✕</button>
+  <div class="lb-stage"><img id="lbImg" alt=""></div>
+  <figcaption id="lbCap"></figcaption>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('lightbox');
+  var img = document.getElementById('lbImg');
+  var cap = document.getElementById('lbCap');
+  var close = document.getElementById('lbClose');
+  var last = null;
+  function hide() {
+    box.hidden = true;
+    img.classList.remove('actual');
+    document.body.classList.remove('lb-open');
+    if (last) last.focus();
+  }
+  function open(src, text, trigger) {
+    last = trigger || null;
+    img.src = src;
+    img.alt = text;
+    cap.textContent = text;
+    img.classList.remove('actual');
+    box.hidden = false;
+    document.body.classList.add('lb-open');
+    img.focus();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('figure.beat img.zoomable'), function (el) {
+    el.addEventListener('click', function () { open(el.getAttribute('src'), el.getAttribute('alt') || '', el); });
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(el.getAttribute('src'), el.getAttribute('alt') || '', el); }
+    });
+  });
+  close.addEventListener('click', hide);
+  box.addEventListener('click', function (e) { if (e.target === box || e.target.classList.contains('lb-stage')) hide(); });
+  img.addEventListener('click', function () { img.classList.toggle('actual'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) hide(); });
+})();
+</script>
 </body>
 </html>

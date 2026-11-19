@@ -244,7 +244,8 @@ function codeBlock(lines) {
 
 function frameFigure(n, beat, imgRel, payload) {
     return `<figure class="beat">
-      <img src="${esc(imgRel)}" alt="${esc(beat.caption)}" loading="lazy">
+      <img src="${esc(imgRel)}" alt="${esc(beat.caption)}" loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame ${n}: ${esc(beat.caption)}">
+      <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">${n}</span>${inline(beat.caption)}</figcaption>
       ${payload ? `<pre class="clip"><code>${esc(payload)}</code></pre>` : ''}
     </figure>`;
@@ -292,9 +293,20 @@ function render(sections, opts) {
   pre.cmd code, pre.clip code { background:none; border:0; padding:0; }
   pre.clip { margin:12px 0 0; border-left:3px solid var(--accent); }
   pre.clip::before { content:"clipboard payload, copied live"; display:block; font:11px/1.4 ui-monospace,monospace; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
-  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px; margin:22px 0 8px; }
-  figure.beat { margin:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
-  figure.beat img { display:block; width:100%; height:auto; border-bottom:1px solid var(--line); }
+  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(440px,1fr)); gap:20px; margin:22px 0 8px; }
+  figure.beat { position:relative; margin:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  figure.beat img { display:block; width:100%; height:auto; border-bottom:1px solid var(--line); cursor:zoom-in; }
+  figure.beat img:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+  .zoom-hint { position:absolute; top:10px; right:10px; display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; border-radius:8px; background:rgba(13,17,23,.72); border:1px solid var(--line); color:var(--text); font:14px/1 ui-monospace,monospace; pointer-events:none; }
+  #lightbox { position:fixed; inset:0; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:3vh 3vw; background:rgba(3,6,10,.86); }
+  #lightbox[hidden] { display:none; }
+  #lightbox .lb-stage { display:flex; align-items:center; justify-content:center; overflow:auto; max-width:94vw; max-height:86vh; }
+  #lightbox img { max-width:94vw; max-height:86vh; background:#fff; border:1px solid var(--line); border-radius:10px; cursor:zoom-in; }
+  #lightbox img.actual { max-width:none; max-height:none; cursor:zoom-out; }
+  #lightbox figcaption { color:var(--muted); font-size:14px; max-width:80ch; text-align:center; }
+  #lbClose { position:fixed; top:16px; right:18px; width:40px; height:40px; border-radius:10px; background:var(--panel); border:1px solid var(--line); color:var(--text); font-size:18px; cursor:pointer; }
+  #lbClose:hover { border-color:var(--accent); }
+  body.lb-open { overflow:hidden; }
   figure.beat figcaption { display:flex; gap:10px; padding:14px 16px; font-size:14px; color:#c9d1d9; }
   figure.beat .num { flex:0 0 auto; font:700 12px/20px ui-monospace,monospace; color:var(--accent); }
   figure.beat pre.clip { margin:12px 16px 16px; font-size:12px; }
@@ -319,6 +331,46 @@ function render(sections, opts) {
 ${body}
 <footer>${inline(program.footer)}<br>Generated from commit <code>${esc(sha)}</code>.</footer>
 </main>
+<div id="lightbox" hidden>
+  <button id="lbClose" type="button" aria-label="Close enlarged frame">✕</button>
+  <div class="lb-stage"><img id="lbImg" alt=""></div>
+  <figcaption id="lbCap"></figcaption>
+</div>
+<script>
+(function () {
+  var box = document.getElementById('lightbox');
+  var img = document.getElementById('lbImg');
+  var cap = document.getElementById('lbCap');
+  var close = document.getElementById('lbClose');
+  var last = null;
+  function hide() {
+    box.hidden = true;
+    img.classList.remove('actual');
+    document.body.classList.remove('lb-open');
+    if (last) last.focus();
+  }
+  function open(src, text, trigger) {
+    last = trigger || null;
+    img.src = src;
+    img.alt = text;
+    cap.textContent = text;
+    img.classList.remove('actual');
+    box.hidden = false;
+    document.body.classList.add('lb-open');
+    img.focus();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('figure.beat img.zoomable'), function (el) {
+    el.addEventListener('click', function () { open(el.getAttribute('src'), el.getAttribute('alt') || '', el); });
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(el.getAttribute('src'), el.getAttribute('alt') || '', el); }
+    });
+  });
+  close.addEventListener('click', hide);
+  box.addEventListener('click', function (e) { if (e.target === box || e.target.classList.contains('lb-stage')) hide(); });
+  img.addEventListener('click', function () { img.classList.toggle('actual'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !box.hidden) hide(); });
+})();
+</script>
 </body>
 </html>
 `;
