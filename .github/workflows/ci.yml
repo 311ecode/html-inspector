@@ -57,7 +57,8 @@ jobs:
 
       - name: no git-history version derivation in the release path
         run: |
-          if grep -rn 'rev-list' lib scripts inspector/test test 2>/dev/null; then
+          # Only the code that builds/ships: tests may legitimately mention the ban.
+          if grep -rn 'rev-list' lib scripts inspector/src 2>/dev/null; then
             echo '::error::release-path code derives versions from git history'
             exit 1
           fi
