@@ -13,3 +13,6 @@ blob-report/
 # local scratch
 .DS_Store
 .tmp/
+
+# npm publish staging (scripts/release-npm.cjs)
+.npm-stage/

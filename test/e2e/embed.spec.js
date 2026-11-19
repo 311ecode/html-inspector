@@ -231,7 +231,12 @@ test('⬇ downloads the settled block as a named PNG (display tier)', async ({ p
     await page.locator('.inspector-download').click();
     const download = await downloadPromise;
     expect(download.suggestedFilename()).toMatch(/^html-inspector-first-copy-\d{8}-\d{4}\.png$/);
-    expect(await download.path()).toBeTruthy();
+    const downloaded = await download.path();
+    expect(downloaded).toBeTruthy();
+    // it really is a PNG: magic bytes + non-trivial size (INSP-010)
+    const bytes = require('node:fs').readFileSync(downloaded);
+    expect(bytes.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+    expect(bytes.length).toBeGreaterThan(100);
     await expect(page.locator('.inspector-toast')).toContainText('⬇ Saved html-inspector-first-copy-');
 
     // downloading does not disturb the settled pick

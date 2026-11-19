@@ -47,6 +47,18 @@ Or vendor the same two files from the `html-inspector-embed-<version>.zip` Relea
 Version, layout and the release flow contracts live in the project
 [`AGENTS.md`](AGENTS.md) and [`tickets/README.md`](tickets/README.md).
 
+## npm
+
+The package publishes as **`menu-inspector`** (the repo name is taken on npm). Owner-run only:
+
+```bash
+npm login && npm run release:npm   # preflight + publish the current version
+npm run release:npm:dry            # stage + pack preview without auth
+```
+
+The tarball carries the version-stamped `inspector.js` + `inspector.css`, so it can be used
+from a CDN (`https://cdn.jsdelivr.net/npm/menu-inspector@<version>/inspector.js`).
+
 ## Tests
 
 ```bash

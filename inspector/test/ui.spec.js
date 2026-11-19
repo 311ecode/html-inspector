@@ -741,6 +741,10 @@ test('INSP-010 host mode: ⬇ downloads the bridged PNG and stays settled', asyn
   await page.locator('.inspector-download').click();
   const download = await downloadPromise;
   expect(download.suggestedFilename()).toMatch(/^html-inspector-probe-\d{8}-\d{4}\.png$/);
+  const downloaded = await download.path();
+  expect(downloaded).toBeTruthy();
+  const bytes = require('node:fs').readFileSync(downloaded);
+  expect(bytes.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a'); // real PNG
   await expect(page.locator('.inspector-toast')).toContainText('⬇ Saved html-inspector-probe-');
 
   // Download does not exit the settled pick, and the controls stay.

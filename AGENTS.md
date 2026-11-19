@@ -118,6 +118,21 @@ pushes `main` + tag over SSH, creates the Release, uploads the zips (skipping an
 identical asset, refusing to overwrite a different one) and verifies via the API.
 **CI never pushes and never releases** — `.github/workflows/ci.yml` only verifies.
 
+## npm release — owner-run, manual (INSP-011)
+
+The npm package is `menu-inspector`, built from `registry/inspector/<version>/` (the
+version-stamped bundle + compiled stylesheet), not from `inspector/src`.
+
+```bash
+npm login                  # owner only; the npm session/token stays in ~/.npmrc
+npm run release:npm:dry    # stage .npm-stage/ + npm pack preview (no auth required)
+npm run release:npm        # preflight → stage → pack → auth gate → typed confirm → publish → verify
+```
+
+The agent has **no npm credentials** (`npm whoami` → 401) and must not attempt the publish
+step: the script refuses at the auth gate and prints the `npm login` instruction. It never
+reads, stores or prints a token. CI never publishes to npm.
+
 Registry serving (GitHub Pages, enabled 2026-11-19):
 
 ```
