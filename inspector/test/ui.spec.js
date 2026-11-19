@@ -1119,18 +1119,29 @@ test('DASH-509: resize re-runs the reflow and re-clamps the settled pick and FAB
 
   await expect.poll(async () => Math.abs((await overlayTop()) - (await probeTop()))).toBeLessThanOrEqual(1);
 
-  for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md']) {
-    const state = await inspectorControlState(page, sel);
-    expect(state.left, sel + ' left margin at the new size').toBeGreaterThanOrEqual(2);
-    expect(state.top, sel + ' top margin at the new size').toBeGreaterThanOrEqual(2);
-    expect(state.right, sel + ' right margin at the new size').toBeLessThanOrEqual(vp.width - 2);
-    expect(state.bottom, sel + ' bottom margin at the new size').toBeLessThanOrEqual(vp.height - 2);
-    expect(state.hit, sel + ' is hit-testable at the new size (got ' + state.hitName + ')').toBe(true);
-  }
-
-  const fabBox = await page.locator('#fab').boundingBox();
-  expect(Math.abs(fabBox.x + fabBox.width - (vp.width - 16)), 'FAB right edge').toBeLessThanOrEqual(1);
-  expect(Math.abs(fabBox.y + fabBox.height - (vp.height - 16)), 'FAB bottom edge').toBeLessThanOrEqual(1);
+  // The reflow is requestAnimationFrame-scheduled (inspector.js `reflow()`), so
+  // the clamps land on the NEXT frame — poll for the settled state instead of
+  // reading it synchronously (a fast machine passed the sync read; CI did not).
+  const settleViolations = async () => {
+    const out = [];
+    for (const sel of ['.inspector-x', '.inspector-camera', '.inspector-text', '.inspector-md']) {
+      const state = await inspectorControlState(page, sel);
+      if (state.left < 2) out.push(sel + ' left margin ' + state.left);
+      if (state.top < 2) out.push(sel + ' top margin ' + state.top);
+      if (state.right > vp.width - 2) out.push(sel + ' right margin ' + state.right);
+      if (state.bottom > vp.height - 2) out.push(sel + ' bottom margin ' + state.bottom);
+      if (!state.hit) out.push(sel + ' not hit-testable (got ' + state.hitName + ')');
+    }
+    const fabBox = await page.locator('#fab').boundingBox();
+    const fabRight = Math.abs(fabBox.x + fabBox.width - (vp.width - 16));
+    const fabBottom = Math.abs(fabBox.y + fabBox.height - (vp.height - 16));
+    if (fabRight > 1) out.push('FAB right edge off by ' + fabRight);
+    if (fabBottom > 1) out.push('FAB bottom edge off by ' + fabBottom);
+    return out;
+  };
+  await expect
+    .poll(settleViolations, { timeout: 10000, message: 'controls + FAB did not settle inside the resized viewport' })
+    .toEqual([]);
 });
 
 // DASH-509 #3 — a nested scroller's scroll must reflow too. The listener is
