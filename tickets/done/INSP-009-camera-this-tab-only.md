@@ -1,11 +1,23 @@
 # INSP-009 — camera: capture THIS tab only (and prove it), no other-tab/whole-screen crops
 
-**Project:** html-inspector · **Status:** NEW (implementing) · **Created:** 2026-11-19 ·
+**Project:** html-inspector · **Status:** DONE (landed 2026-11-19, released v0.4.14) · **Created:** 2026-11-19 ·
 **Origin:** user on the docs sandbox — the 📷 pill opened Chrome's share picker listing *any* tab
 and the whole screen; picking a different surface crops a shifted region because the crop math
 assumes the current tab's viewport. "It should be only that specific tab."
 **Related:** INSP-006 (sandbox), the capture ladder in `inspector/src/inspector.js`
 (`displayCapture`, tier 2), `extension/src/bridge.js` (tier 1, unaffected).
+
+## 0. Landed — 2026-11-19
+
+| Fact | Value |
+|---|---|
+| Release | https://github.com/311ecode/html-inspector/releases/tag/inspector-v0.4.14 |
+| Assets | `html-inspector-extension-0.4.14.zip` (47,108 B, `sha256:0637d969…`) · `html-inspector-embed-0.4.14.zip` (35,181 B, `sha256:3474d537…`) + `.sha256` |
+| Picker | `getDisplayMedia` with `preferCurrentTab: true`, `selfBrowserSurface: 'include'`, `monitorTypeSurfaces: 'exclude'`, `surfaceSwitching: 'exclude'`, `systemAudio: 'exclude'`; a browser rejecting the modern keys gets the minimal-options retry |
+| Proof | per-boot Capture Handle (`setCaptureHandleConfig` + `track.getCaptureHandle()`) refuses another tab; for the manual-crop path a viewport-shape backstop (±2%) refuses a window/whole-screen grant — the old shifted-crop case |
+| Degradation | `cropTo` failure falls back to the manual crop (with the shape guard), instead of failing the capture |
+| UX | pre-prompt toast “Choose this tab to capture the block”; cancel still toasts “Screen capture cancelled” |
+| Tests | ui **39/39** (incl. the existing Region-Capture site-mode specs, now geometry-aware) · e2e **13 passed** (2 network-gated skipped): same-shape fake stream → “📸 Copied image” + non-empty `image/png`; different-shape stream → “does not match this tab”, nothing copied · node suites 47 |
 
 ## Summary
 
