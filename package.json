@@ -22,7 +22,8 @@
     "sync:vendor": "node extension/tools/sync-vendor.mjs",
     "release": "node scripts/release.cjs",
     "test:e2e": "playwright test --project=e2e",
-    "test:e2e:live": "HTML_INSPECTOR_LIVE=1 playwright test --project=e2e"
+    "test:e2e:live": "HTML_INSPECTOR_LIVE=1 playwright test --project=e2e",
+    "docs": "node scripts/docs.cjs"
   },
   "devDependencies": {
     "playwright": "^1.61.0",

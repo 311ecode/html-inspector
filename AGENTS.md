@@ -88,6 +88,7 @@ npm run test:e2e                              # INSP-002: the HTML embed on a pl
                                               # the unpacked extension in Chromium (hermetic, headless)
 npm run test:e2e:live                         # also proves the PUBLISHED distribution (Pages sha256 +
                                               # the released extension zip) — network, not CI
+npm run docs                                  # INSP-003: regenerate docs/index.html + frames from a live browser run
 node scripts/publish-inspector.cjs            # --check is the default; --write regenerates registry/
 node scripts/check-inspector-registry.cjs --immutable --determinism
 node extension/tools/sync-vendor.mjs --check

@@ -12,6 +12,13 @@ registry, the extension shell, and the release flow.
 > registry is served from GitHub Pages. The import + release record is
 > [`INSP-001`](tickets/done/INSP-001-bootstrap-public-distribution-repo.md).
 
+## Documentation
+
+The live, generated product page (what it is · who it is for · embed snippet ·
+extension install · real screenshots captured from a browser run):
+
+- **https://311ecode.github.io/html-inspector/docs/** — regenerate with `npm run docs`
+
 ## Quick start
 
 **Embed the FAB** on any page (served registry, GitHub Pages):

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HTML Inspector — live documentation</title>
+<style>
+  :root { color-scheme: dark; --bg:#0d1117; --panel:#161b22; --line:#30363d; --text:#e6edf3; --muted:#9aa4af; --accent:#2f81f7; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 48px 24px 96px; }
+  header { border-bottom:1px solid var(--line); padding-bottom:24px; margin-bottom:40px; }
+  h1 { font-size: 44px; line-height:1.1; margin:0 0 12px; letter-spacing:-1px; }
+  .tagline { font-size: 19px; color:var(--muted); max-width: 70ch; margin:0 0 18px; }
+  .badges { display:flex; gap:8px; flex-wrap:wrap; }
+  .badge { font:12px/1 ui-monospace,SFMono-Regular,Menlo,monospace; border:1px solid var(--line); background:var(--panel); color:var(--muted); padding:7px 10px; border-radius:999px; }
+  .badge a { color:var(--accent); text-decoration:none; }
+  h2 { font-size:26px; margin:56px 0 14px; letter-spacing:-.4px; }
+  p { max-width: 78ch; color:#c9d1d9; }
+  code { font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:#1f242c; border:1px solid var(--line); border-radius:6px; padding:1px 5px; }
+  pre.cmd, pre.clip { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow:auto; }
+  pre.cmd code, pre.clip code { background:none; border:0; padding:0; }
+  pre.clip { margin:12px 0 0; border-left:3px solid var(--accent); }
+  pre.clip::before { content:"clipboard payload, copied live"; display:block; font:11px/1.4 ui-monospace,monospace; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
+  .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:20px; margin:22px 0 8px; }
+  figure.beat { margin:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  figure.beat img { display:block; width:100%; height:auto; border-bottom:1px solid var(--line); }
+  figure.beat figcaption { display:flex; gap:10px; padding:14px 16px; font-size:14px; color:#c9d1d9; }
+  figure.beat .num { flex:0 0 auto; font:700 12px/20px ui-monospace,monospace; color:var(--accent); }
+  figure.beat pre.clip { margin:12px 16px 16px; font-size:12px; }
+  footer { margin-top:72px; padding-top:24px; border-top:1px solid var(--line); color:var(--muted); font-size:13px; }
+  footer code { font-size:12px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>HTML Inspector</h1>
+  <p class="tagline">Drag a block on any page, get <code>URL: / Path: / HTML:</code> on the clipboard. Two files to embed, or one Chrome extension.</p>
+  <div class="badges">
+    <span class="badge">v0.4.11</span>
+    <span class="badge">registry 0.4.11</span>
+    <span class="badge"><a href="https://github.com/311ecode/html-inspector/releases">releases</a></span>
+    <span class="badge"><a href="https://311ecode.github.io/html-inspector/registry/index.json">registry index</a></span>
+    <span class="badge"><a href="https://github.com/311ecode/html-inspector">source</a></span>
+  </div>
+</header>
+<section id="what">
+  <h2>What it is</h2>
+  <p>A mobile-friendly inspection FAB for any web page. Drag the button onto a block-level element and lift your finger: the page URL, the element path and its outerHTML land on the clipboard, ready to paste into a ticket, a chat or an AI assistant.</p>
+<p>It is deliberately tiny: a zero-dependency browser script plus a stylesheet. There is no dashboard, no build step, no account. The same bundle is served as a static registry (GitHub Pages) and ships as two zips on GitHub Releases: an embeddable bundle and a Chrome MV3 shell that injects it into any tab on demand.</p>
+  
+  <div class="strip"><figure class="beat">
+      <img src="assets/01-embed-idle.jpg" alt="Embedded on a plain third-party page: the FAB waits in the corner." loading="lazy">
+      <figcaption><span class="num">1</span>Embedded on a plain third-party page: the FAB waits in the corner.</figcaption>
+      
+    </figure></div>
+</section>
+<section id="who">
+  <h2>Who it is for</h2>
+  <p><strong>Employee QA on real sites.</strong> Testers and support engineers stop re-typing &quot;the third card on the payments page&quot; — they hand over the exact block, path and markup.</p>
+<p><strong>Agencies and freelancers.</strong> Hand a client a website that can explain itself; two tags in the page and every stakeholder can pick the block that looks wrong.</p>
+<p><strong>Support and docs teams.</strong> Paste a picked block into a ticket, a knowledge-base draft or a bug report — the payload is the same on every host, so the receiving side can replay it.</p>
+<p><strong>Anyone briefing an AI.</strong> Picked blocks carry a stable XPath/selector and a Markdown translation, so &quot;fix this&quot; arrives with the exact context instead of a screenshot.</p>
+  
+  
+</section>
+<section id="embed">
+  <h2>Embed it on any page</h2>
+  <p>Two lines, served from the published registry. The floating channel (<code>v1/</code>) follows the latest release, so a bundle update needs no page deploy.</p>
+  <pre class="cmd"><code>&lt;link rel=&quot;stylesheet&quot; href=&quot;https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.css&quot;&gt;
+&lt;script defer src=&quot;https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.js&quot;&gt;&lt;/script&gt;</code></pre>
+  <div class="strip"><figure class="beat">
+      <img src="assets/02-embed-drag.jpg" alt="Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb." loading="lazy">
+      <figcaption><span class="num">2</span>Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb.</figcaption>
+      
+    </figure>
+<figure class="beat">
+      <img src="assets/03-embed-copied.jpg" alt="Lift: the payload is on the clipboard (URL, path and outerHTML were just copied)." loading="lazy">
+      <figcaption><span class="num">3</span>Lift: the payload is on the clipboard (URL, path and outerHTML were just copied).</figcaption>
+      <pre class="clip"><code>URL: http://127.0.0.1:36225/embed
+Path: article#first-block.card &gt; p#first-copy
+HTML:
+&lt;p id=&quot;first-copy&quot;&gt;The inspector should be able to pick this article and copy its HTML.&lt;/p&gt;</code></pre>
+    </figure>
+<figure class="beat">
+      <img src="assets/04-embed-sheet.jpg" alt="Tap instead of drag to open the sheet: collected snapshots and the inspection switches." loading="lazy">
+      <figcaption><span class="num">4</span>Tap instead of drag to open the sheet: collected snapshots and the inspection switches.</figcaption>
+      
+    </figure>
+<figure class="beat">
+      <img src="assets/05-embed-mobile.jpg" alt="The same embed on a 390 px phone — the FAB is always visible and safe-area aware." loading="lazy">
+      <figcaption><span class="num">5</span>The same embed on a 390 px phone — the FAB is always visible and safe-area aware.</figcaption>
+      
+    </figure></div>
+</section>
+<section id="extension">
+  <h2>Or use the Chrome extension</h2>
+  <p>The extension is a thin trigger: nothing runs until you press <code>Alt+Shift+I</code>. It probes the page, injects the same vendored bundle and stylesheet, and either adds its FAB (a page with no inspector) or donates the screen-capture bridge to a page that already has one.</p>
+  <pre class="cmd"><code>1. Download html-inspector-extension-&lt;version&gt;.zip from the latest release
+2. chrome://extensions  -&gt;  Developer mode  -&gt;  Load unpacked  -&gt;  the unzipped folder
+3. Press Alt+Shift+I on any page</code></pre>
+  <div class="strip"><figure class="beat">
+      <img src="assets/06-extension-bare.jpg" alt="A bare page before the shortcut: no inspector, nothing injected." loading="lazy">
+      <figcaption><span class="num">6</span>A bare page before the shortcut: no inspector, nothing injected.</figcaption>
+      
+    </figure>
+<figure class="beat">
+      <img src="assets/07-extension-injected.jpg" alt="After the shortcut: the extension injected the bundle and the FAB appears." loading="lazy">
+      <figcaption><span class="num">7</span>After the shortcut: the extension injected the bundle and the FAB appears.</figcaption>
+      
+    </figure>
+<figure class="beat">
+      <img src="assets/08-extension-pick.jpg" alt="The injected picker highlights the block — the same pick loop as the embed." loading="lazy">
+      <figcaption><span class="num">8</span>The injected picker highlights the block — the same pick loop as the embed.</figcaption>
+      
+    </figure>
+<figure class="beat">
+      <img src="assets/09-extension-copied.jpg" alt="Lift: the copied payload comes from the injected bundle, not from the page." loading="lazy">
+      <figcaption><span class="num">9</span>Lift: the copied payload comes from the injected bundle, not from the page.</figcaption>
+      <pre class="clip"><code>URL: http://127.0.0.1:36225/
+Path: article#first-block.card &gt; p#first-copy
+HTML:
+&lt;p id=&quot;first-copy&quot;&gt;The inspector should be able to pick this article and copy its HTML.&lt;/p&gt;</code></pre>
+    </figure></div>
+</section>
+<section id="verify">
+  <h2>Verify what you ship</h2>
+  <p>Every zip ships with a <code>.sha256</code> sibling, and the static registry is hash-pinned by <code>registry/index.json</code> — the same verification the repo runs in CI. The current version and its links are below.</p>
+  <pre class="cmd"><code>curl -sL https://311ecode.github.io/html-inspector/registry/index.json
+# latest, channel paths and per-file sha256 for every published version</code></pre>
+  
+</section>
+<footer>Generated from the live code by <code>npm run docs</code> (<code>scripts/docs.cjs</code>). The frames above are real browser runs of the committed registry and the unpacked extension — regenerate after changing the FAB, the extension or the registry.<br>Generated from commit <code>aa9d43e</code>.</footer>
+</main>
+</body>
+</html>

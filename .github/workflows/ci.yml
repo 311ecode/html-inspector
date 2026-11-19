@@ -83,6 +83,9 @@ jobs:
       - name: embed + extension e2e (hermetic)
         run: npx playwright test --project=e2e
 
+      - name: live docs generator (frames + docs/index.html)
+        run: npm run docs
+
   ui:
     runs-on: ubuntu-latest
     steps:

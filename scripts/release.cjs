@@ -189,6 +189,11 @@ function gates() {
 
 // ── 4. build ───────────────────────────────────────────────────────────
 
+function regenerateDocs() {
+    run(process.execPath, ['scripts/docs.cjs'], { stdio: ['ignore', 'inherit', 'inherit'] });
+    ok('live docs regenerated (docs/index.html + frames)');
+}
+
 function build() {
     const artifact = require('../lib/artifact');
     fs.rmSync(DIST, { recursive: true, force: true });
@@ -273,6 +278,8 @@ function releaseBody(tag, assets) {
         `1. Download \`${ext.name}\` and unzip it.`,
         '2. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, select the unzipped `html-inspector-' + version + '` folder.',
         '3. Press `Alt+Shift+I` on any page (or click the toolbar button) to inject the FAB.',
+        '',
+        `Docs: https://${ORG}.github.io/${REPO}/docs/ — the same claims, captured live from this release.`,
         '',
         '### Registry (HTTP)',
         '',
@@ -366,6 +373,7 @@ async function pages() {
     log(`releasing html-inspector ${version} (tag inspector-v${version})${dryRun ? ' [dry-run]' : ''}`);
     regenerate();
     gates();
+    regenerateDocs();
     const assets = build();
     if (dryRun) {
         ok(`[dry-run] would publish: ${assets.map((a) => a.name).join(', ')}`);
