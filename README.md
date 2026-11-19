@@ -7,9 +7,25 @@ Extracted from `~/dev/menu-dashboard` (DASH-290a/b), where it lived as
 `menu-inspector@0.4.11`. This repo owns the source, the generated static
 registry, the extension shell, and the release flow.
 
-> **State: bootstrap.** This repo currently carries docs + tickets only. The
-> import and the first public release are
-> [`INSP-001`](tickets/new/INSP-001-bootstrap-public-distribution-repo.md).
+> **State: live.** Tag [`inspector-v0.4.11`](https://github.com/311ecode/html-inspector/releases/tag/inspector-v0.4.11)
+> carries the Chrome zip + the embeddable zip (each with a `.sha256`); the
+> registry is served from GitHub Pages. The import + release record is
+> [`INSP-001`](tickets/done/INSP-001-bootstrap-public-distribution-repo.md).
+
+## Quick start
+
+**Embed the FAB** on any page (served registry, GitHub Pages):
+
+```html
+<link rel="stylesheet" href="https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.css">
+<script defer src="https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.js"></script>
+```
+
+Or vendor the same two files from the `html-inspector-embed-<ver>.zip` Release asset.
+
+**Chrome extension** — download `html-inspector-<ver>-<sha>.zip` from the latest
+[Release](https://github.com/311ecode/html-inspector/releases), unzip, then
+`chrome://extensions` → Developer mode → Load unpacked.
 
 ## What ships
 

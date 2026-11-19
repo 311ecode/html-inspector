@@ -19,6 +19,9 @@ module.exports = defineConfig({
     reporter: [['list']],
     use: {
         headless: true,
+        // The fixture suite pins control clamping against a 1280x800 viewport
+        // (DASH-509); Playwright's default 720 height would fail those pins.
+        viewport: { width: 1280, height: 800 },
         actionTimeout: 5000,
     },
     projects: [

@@ -10,8 +10,12 @@ I live in `~/dev/` next to the other projects. Every folder under `~/dev` is its
 own git repo with its own remote — commit to the repo a change belongs to, and
 never mix repos in one commit.
 
-**Repository state:** bootstrap. Only docs + tickets exist today; the import and
-the first public release are the job of [`INSP-001`](tickets/new/INSP-001-bootstrap-public-distribution-repo.md).
+**Repository state:** live. The inspector + extension were imported from
+`menu-dashboard` on 2026-11-19 and the first public release is cut:
+tag `inspector-v0.4.11`, Release assets for the Chrome zip + the embeddable zip,
+registry served from GitHub Pages. [`INSP-001`](tickets/done/INSP-001-bootstrap-public-distribution-repo.md)
+is the bootstrap record; `menu-dashboard/tickets/new/DASH-600-*` is the consumer
+rewire on the dashboard side.
 
 Work is tracked as `INSP-…` tickets; [`tickets/README.md`](tickets/README.md) is
 the index & handoff map — fresh agents start there. The shared, cross-project
@@ -45,9 +49,9 @@ A ticket is not done because code works on a branch. Done means all of:
    `node scripts/publish-inspector.cjs --write`; if it touches the registry,
    `node tools/sync-vendor.mjs` refreshes `extension/vendor/`. Never edit a
    generated file.
-5. **If the ticket ships a version:** tag `v<version>` exists, the GitHub Release
+5. **If the ticket ships a version:** tag `inspector-v<version>` exists, the GitHub Release
    carries both zips + `.sha256`, and `node scripts/check-inspector-registry.cjs
-   --release v<version>` passes.
+   --release inspector-v<version>` passes.
 
 ## Invariants (frozen — changing one needs its own ticket)
 
@@ -72,12 +76,39 @@ A ticket is not done because code works on a branch. Done means all of:
   fine-grained `~/dev/.gh-token` and `/tmp/env/GITHUB_TEST_TOKEN` **cannot create
   repositories** (verified: `POST /user/repos` → 403).
 
-## Build / test (the post-import contract — exact commands live in INSP-001)
+## Build / test
 
 ```bash
-npm test                        # inspector protocol + ui suites, no dashboard
-node scripts/publish-inspector.cjs            # --check is the default
+npm ci
+npm test                                      # protocol + artifact + site-bridge + registry + vendor (no dashboard, no browser)
+npm run test:ui                               # Playwright fixture-page suite (ports 8091/8093)
+node scripts/publish-inspector.cjs            # --check is the default; --write regenerates registry/
 node scripts/check-inspector-registry.cjs --immutable --determinism
-node tools/sync-vendor.mjs --check
-node scripts/release.cjs        # bump → build zips → tag → Release → verify
+node extension/tools/sync-vendor.mjs --check
 ```
+
+## Release — from this side only
+
+```bash
+# token: the classic PAT (repo scope) in the shell state; never commit it
+GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs            # current version
+GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs --bump     # +1 inspector & extension patch
+GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs --dry-run  # build only
+GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs --pages    # also (re)enable Pages
+```
+
+The script regenerates the registry, runs every gate, builds both zips into
+`dist/` (gitignored), commits the version bump, tags `inspector-v<version>`,
+pushes `main` + tag over SSH, creates the Release, uploads the zips (skipping an
+identical asset, refusing to overwrite a different one) and verifies via the API.
+**CI never pushes and never releases** — `.github/workflows/ci.yml` only verifies.
+
+Registry serving (GitHub Pages, enabled 2026-11-19):
+
+```
+https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.js
+https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.css
+https://311ecode.github.io/html-inspector/registry/index.json
+```
+
+Releases: https://github.com/311ecode/html-inspector/releases
