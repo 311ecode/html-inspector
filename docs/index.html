@@ -79,7 +79,7 @@
 <figure class="beat">
       <img src="assets/03-embed-copied.jpg" alt="Lift: the payload is on the clipboard (URL, path and outerHTML were just copied)." loading="lazy">
       <figcaption><span class="num">3</span>Lift: the payload is on the clipboard (URL, path and outerHTML were just copied).</figcaption>
-      <pre class="clip"><code>URL: http://127.0.0.1:36225/embed
+      <pre class="clip"><code>URL: http://127.0.0.1:37867/embed
 Path: article#first-block.card &gt; p#first-copy
 HTML:
 &lt;p id=&quot;first-copy&quot;&gt;The inspector should be able to pick this article and copy its HTML.&lt;/p&gt;</code></pre>
@@ -95,6 +95,53 @@ HTML:
       
     </figure></div>
 </section>
+<section id="metadata">
+  <h2>Add your own metadata to the clipboard</h2>
+  <p>The plain payload is <code>URL: / Path: / HTML:</code>. A host page can enrich it, and the FAB does the rest — no configuration, no options. There are two levels, both JSON islands in the page, both optional:</p>
+<p><strong>Page-level context</strong> — one island per page, read by id. Every payload from that page then carries a <code>Context:</code> block, facts in island order:</p>
+  <pre class="cmd"><code>&lt;script type=&quot;application/json&quot; id=&quot;evidence-context&quot;&gt;
+{&quot;schema&quot;:&quot;evidence-context/v1&quot;,&quot;facts&quot;:{&quot;app&quot;:&quot;Example Shop&quot;,&quot;suite&quot;:&quot;orders-e2e&quot;}}
+&lt;/script&gt;</code></pre>
+  
+</section>
+<section id="metadata-block">
+  <h2>Per-block evidence</h2>
+  <p>Put <code>data-evidence-node=&quot;&lt;id&gt;&quot;</code> on the block (or an ancestor) and <code>evidence-meta-&lt;beat&gt;</code> islands anywhere in the page. The island entry for that id becomes <code>Captured:</code> (its <code>captured</code> / <code>page</code> route) plus an <code>Evidence:</code> block of the remaining facts:</p>
+  <pre class="cmd"><code>&lt;article data-evidence-node=&quot;order-card-42&quot;&gt; … &lt;/article&gt;
+
+&lt;script type=&quot;application/json&quot; id=&quot;evidence-meta-orders-1&quot;&gt;
+{&quot;order-card-42&quot;:{&quot;captured&quot;:&quot;https://example-shop.test/orders/42&quot;,
+  &quot;run&quot;:&quot;39120487731 · orders-e2e&quot;, &quot;dom&quot;:{&quot;path&quot;:&quot;html/orders/42.html&quot;}}}
+&lt;/script&gt;</code></pre>
+  <div class="strip"><figure class="beat">
+      <img src="assets/06-embed-metadata.jpg" alt="The paragraph inside an annotated card: Context, Captured and Evidence land before the HTML." loading="lazy">
+      <figcaption><span class="num">6</span>The paragraph inside an annotated card: Context, Captured and Evidence land before the HTML.</figcaption>
+      <pre class="clip"><code>URL: http://127.0.0.1:37867/embed-metadata
+Path: article#order-card.card[data-env=&quot;staging&quot;] &gt; p#meta-copy.total
+Context:
+  app: Example Shop
+  suite: orders-e2e
+  environment: staging
+  commit: https://github.com/example-org/example-shop/commit/4f2c9a1
+Captured: https://example-shop.test/orders/42
+Evidence:
+  run: 39120487731 · orders-e2e · sha 4f2c9a1
+  dom: html/orders/42.html
+  imageSize: 1280×800 px
+  render: 1280×800 CSS @2×
+HTML:
+&lt;p id=&quot;meta-copy&quot; data-testid=&quot;order-total&quot; class=&quot;total&quot;&gt;Total: €42.00 — this paragraph is
+    the pick. Its payload carries the page context and the card's evidence island.&lt;/p&gt;</code></pre>
+    </figure></div>
+</section>
+<section id="metadata-rules">
+  <h2>Rendering and degradation rules</h2>
+  <p>Section order is frozen: context first, then <code>Captured:</code>, then <code>Evidence:</code>, then <code>HTML:</code> — a page with no islands keeps the byte-identical three-line payload.</p>
+<p>Values are display text, not raw JSON: primitives are printed as-is; <code>dom</code> → <code>path</code> (plus <code> (missing)</code>), <code>imageSize</code> → <code>1280×800 px</code>, <code>render</code> → <code>1280×800 CSS @2×</code>, arrays join with <code>, </code>, any other object is compact single-line JSON. Strings longer than 300 characters are truncated with <code>…</code>, so one runaway value cannot make the paste unreadable.</p>
+<p>Nothing here can break the copy: a malformed island, a missing entry for the id or an empty entry degrades to the plain payload — never an exception. The frozen format is covered by <code>inspector/test/protocol.test.js</code>, and the embed above is re-proved on every <code>npm run test:e2e</code>. The breadcrumb <code>Path:</code> carries the element's identity: its <code>id</code>, up to two real classes, and the dashboard's <code>data-env</code> / <code>data-host</code> attributes — so naming your blocks well makes the path alone useful on the receiving dashboard.</p>
+  <pre class="cmd"><code></code></pre>
+  
+</section>
 <section id="extension">
   <h2>Or use the Chrome extension</h2>
   <p>The extension is a thin trigger: nothing runs until you press <code>Alt+Shift+I</code>. It probes the page, injects the same vendored bundle and stylesheet, and either adds its FAB (a page with no inspector) or donates the screen-capture bridge to a page that already has one.</p>
@@ -102,24 +149,24 @@ HTML:
 2. chrome://extensions  -&gt;  Developer mode  -&gt;  Load unpacked  -&gt;  the unzipped folder
 3. Press Alt+Shift+I on any page</code></pre>
   <div class="strip"><figure class="beat">
-      <img src="assets/06-extension-bare.jpg" alt="A bare page before the shortcut: no inspector, nothing injected." loading="lazy">
-      <figcaption><span class="num">6</span>A bare page before the shortcut: no inspector, nothing injected.</figcaption>
+      <img src="assets/07-extension-bare.jpg" alt="A bare page before the shortcut: no inspector, nothing injected." loading="lazy">
+      <figcaption><span class="num">7</span>A bare page before the shortcut: no inspector, nothing injected.</figcaption>
       
     </figure>
 <figure class="beat">
-      <img src="assets/07-extension-injected.jpg" alt="After the shortcut: the extension injected the bundle and the FAB appears." loading="lazy">
-      <figcaption><span class="num">7</span>After the shortcut: the extension injected the bundle and the FAB appears.</figcaption>
+      <img src="assets/08-extension-injected.jpg" alt="After the shortcut: the extension injected the bundle and the FAB appears." loading="lazy">
+      <figcaption><span class="num">8</span>After the shortcut: the extension injected the bundle and the FAB appears.</figcaption>
       
     </figure>
 <figure class="beat">
-      <img src="assets/08-extension-pick.jpg" alt="The injected picker highlights the block — the same pick loop as the embed." loading="lazy">
-      <figcaption><span class="num">8</span>The injected picker highlights the block — the same pick loop as the embed.</figcaption>
+      <img src="assets/09-extension-pick.jpg" alt="The injected picker highlights the block — the same pick loop as the embed." loading="lazy">
+      <figcaption><span class="num">9</span>The injected picker highlights the block — the same pick loop as the embed.</figcaption>
       
     </figure>
 <figure class="beat">
-      <img src="assets/09-extension-copied.jpg" alt="Lift: the copied payload comes from the injected bundle, not from the page." loading="lazy">
-      <figcaption><span class="num">9</span>Lift: the copied payload comes from the injected bundle, not from the page.</figcaption>
-      <pre class="clip"><code>URL: http://127.0.0.1:36225/
+      <img src="assets/10-extension-copied.jpg" alt="Lift: the copied payload comes from the injected bundle, not from the page." loading="lazy">
+      <figcaption><span class="num">10</span>Lift: the copied payload comes from the injected bundle, not from the page.</figcaption>
+      <pre class="clip"><code>URL: http://127.0.0.1:37867/
 Path: article#first-block.card &gt; p#first-copy
 HTML:
 &lt;p id=&quot;first-copy&quot;&gt;The inspector should be able to pick this article and copy its HTML.&lt;/p&gt;</code></pre>
@@ -132,7 +179,7 @@ HTML:
 # latest, channel paths and per-file sha256 for every published version</code></pre>
   
 </section>
-<footer>Generated from the live code by <code>npm run docs</code> (<code>scripts/docs.cjs</code>). The frames above are real browser runs of the committed registry and the unpacked extension — regenerate after changing the FAB, the extension or the registry.<br>Generated from commit <code>aa9d43e</code>.</footer>
+<footer>Generated from the live code by <code>npm run docs</code> (<code>scripts/docs.cjs</code>). The frames above are real browser runs of the committed registry and the unpacked extension — regenerate after changing the FAB, the extension or the registry.<br>Generated from commit <code>1153062</code>.</footer>
 </main>
 </body>
 </html>

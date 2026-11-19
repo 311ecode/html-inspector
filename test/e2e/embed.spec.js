@@ -67,3 +67,41 @@ test('the settled pick is cleared with ✕ and the embed stays loaded', async ({
     await expect(page.locator('.inspector-tag')).toBeHidden();
     await expect(page.locator('#fab')).toBeVisible();
 });
+
+test('a page can enrich the copied payload with context + evidence metadata', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: srv.base });
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    await page.goto(srv.base + '/embed-metadata');
+    await expect(page.locator('#fab')).toBeVisible();
+
+    const block = page.locator('#meta-copy');
+    const box = await block.boundingBox();
+    await dragFabTo(page, box.x + box.width / 2, box.y + box.height / 2);
+    await expect(page.locator('.inspector-overlay')).toBeVisible();
+
+    // The context island makes every payload carry a Context block first.
+    await expect
+        .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+        .toContain('Context:');
+    const payload = await readClipboard(page);
+
+    // Frozen order: Context -> Captured -> Evidence -> HTML.
+    const idx = (needle) => payload.indexOf(needle);
+    expect(idx('Context:')).toBeGreaterThan(-1);
+    expect(idx('Context:')).toBeLessThan(idx('Captured:'));
+    expect(idx('Captured:')).toBeLessThan(idx('Evidence:'));
+    expect(idx('Evidence:')).toBeLessThan(idx('\nHTML:'));
+
+    expect(payload).toContain('Context:\n  app: Example Shop\n  suite: orders-e2e');
+    expect(payload).toContain('Captured: https://example-shop.test/orders/42');
+    expect(payload).toContain('run: 39120487731 · orders-e2e · sha 4f2c9a1');
+    expect(payload).toContain('dom: html/orders/42.html');
+    expect(payload).toContain('imageSize: 1280×800 px');
+    expect(payload).toContain('render: 1280×800 CSS @2×');
+    expect(payload).toContain('id="meta-copy"');
+
+    // The breadcrumb keeps identity attributes, so naming blocks pays off.
+    expect(payload.split('\n')[1]).toContain('p#meta-copy');
+    expect(errors).toEqual([]);
+});

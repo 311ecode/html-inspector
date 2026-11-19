@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Third-party site with the embed + clipboard metadata</title>
+<link rel="stylesheet" href="__REGISTRY_BASE__/inspector/v1/inspector.css">
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; margin: 40px auto; max-width: 720px; }
+  .card { border: 1px solid #ccc; border-radius: 8px; padding: 16px; margin: 24px 0; }
+  .note { color: #666; font-size: 14px; }
+</style>
+</head>
+<body>
+<h1>A third-party page that annotates its blocks</h1>
+<p class="note">Same two embed lines as any host site — plus JSON islands that enrich the
+   clipboard payload. Pick the paragraph inside the card below.</p>
+
+<!-- 1. Page-level context: one island per page, read by id. -->
+<script type="application/json" id="evidence-context">
+{"schema":"evidence-context/v1","facts":{
+  "app":"Example Shop",
+  "suite":"orders-e2e",
+  "environment":"staging",
+  "commit":"https://github.com/example-org/example-shop/commit/4f2c9a1"
+}}
+</script>
+
+<!-- 2. Per-block evidence: the nearest [data-evidence-node] ancestor supplies the id. -->
+<article class="card" data-evidence-node="order-card-42" id="order-card" data-env="staging">
+  <h2>Order #42</h2>
+  <p id="meta-copy" data-testid="order-total" class="total">Total: €42.00 — this paragraph is
+    the pick. Its payload carries the page context and the card's evidence island.</p>
+  <p class="note">The pickable block is the paragraph; the card is its evidence node.</p>
+</article>
+
+<script type="application/json" id="evidence-meta-orders-1">
+{"order-card-42":{
+  "captured":"https://example-shop.test/orders/42",
+  "run":"39120487731 · orders-e2e · sha 4f2c9a1",
+  "dom":{"path":"html/orders/42.html"},
+  "imageSize":{"width":1280,"height":800},
+  "render":{"cssWidth":1280,"cssHeight":800,"dpr":2}
+}}
+</script>
+
+<script defer src="__REGISTRY_BASE__/inspector/v1/inspector.js"></script>
+</body>
+</html>

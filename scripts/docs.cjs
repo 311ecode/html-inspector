@@ -62,11 +62,11 @@ function embedScene(srv) {
     let page;
     let mobileContext;
 
-    async function freshPage() {
+    async function freshPage(route) {
         context = await browser.newContext({ viewport: VIEWPORT });
         await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: srv.base });
         page = await context.newPage();
-        await page.goto(srv.base + '/embed');
+        await page.goto(srv.base + (route || '/embed'));
         await page.waitForSelector('#fab', { state: 'visible' });
         return page;
     }
@@ -116,6 +116,22 @@ function embedScene(srv) {
                     { what: 'the clipboard payload after the pick' }
                 );
                 await page.waitForSelector('.inspector-overlay', { state: 'visible' });
+                await page.screenshot({ path: file, type: 'jpeg', quality: 82 });
+                return { payload };
+            }
+            if (name === 'metadata') {
+                // A page that annotates its blocks: pick the paragraph inside the
+                // [data-evidence-node] card so the payload gains Context/Captured/Evidence.
+                await context.close();
+                await freshPage('/embed-metadata');
+                const box = await page.locator('#meta-copy').boundingBox();
+                if (!box) throw new Error('embed scene: #meta-copy is not visible');
+                await dragFabTo(page, box.x + box.width / 2, box.y + box.height / 2);
+                await page.waitForSelector('.inspector-overlay', { state: 'visible' });
+                const payload = await waitFor(
+                    async () => { const t = await readClipboard(page).catch(() => ''); return t && t.includes('Context:') ? t : ''; },
+                    { what: 'the enriched clipboard payload (Context/Captured/Evidence)' }
+                );
                 await page.screenshot({ path: file, type: 'jpeg', quality: 82 });
                 return { payload };
             }
@@ -334,7 +350,7 @@ ${body}
             const rel = path.join('assets', `${String(n).padStart(2, '0')}-${beat.scene}-${beat.shot}.jpg`);
             const file = path.join(DOCS, rel);
             const { payload } = await scene.shot(beat.shot, file);
-            frameOf.set(beat, { n, rel, payload: beat.shot === 'copied' ? payload : null });
+            frameOf.set(beat, { n, rel, payload: payload || null });
             log(`frame ${n}: ${beat.scene}/${beat.shot} -> docs/${rel}`);
         }
     } finally {

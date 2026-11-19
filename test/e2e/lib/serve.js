@@ -61,6 +61,14 @@ function startServer(opts) {
             res.end(html);
             return;
         }
+        if (pathname === '/embed-metadata' || pathname === '/embed-metadata/') {
+            const html = fs
+                .readFileSync(path.join(FIXTURES, 'embed-metadata', 'index.html'), 'utf8')
+                .replaceAll('__REGISTRY_BASE__', registryBase);
+            res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+            res.end(html);
+            return;
+        }
         if (pathname.startsWith('/registry/')) {
             sendFile(res, path.join(ROOT, pathname.replace(/^\/+/, '')));
             return;
