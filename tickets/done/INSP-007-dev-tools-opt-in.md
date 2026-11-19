@@ -1,6 +1,6 @@
 # INSP-007 — distribution sheet vs developer tools: dev tools become opt-in (no public switch, no reload)
 
-**Project:** html-inspector · **Status:** NEW (implementing) · **Created:** 2026-11-19 ·
+**Project:** html-inspector · **Status:** DONE (landed 2026-11-19, released v0.4.12) · **Created:** 2026-11-19 ·
 **Origin:** user decision after the INSP-006 review — the public embed opened a "Developer tools"
 sheet on a single tap, whose "Developer mode" switch reloaded the page with `?dev=1`. The
 user's call: dev mode must be **independent of how the bundle is served**; when the host asks
@@ -8,6 +8,22 @@ for it we have it, otherwise not; the capability stays in the source but is **no
 ("too specific").
 **Related:** INSP-006 (docs sandbox exposed the behaviour), DASH-600 (dashboard consumer),
 `inspector/src/inspector.js` (`devMode` / sheet markup), `inspector/test/ui.spec.js`.
+
+## 0. Landed — 2026-11-19
+
+| Fact | Value |
+|---|---|
+| Version | **0.4.12** (registry `0.4.12` + `v1`, extension manifest `0.4.12`) |
+| Release | https://github.com/311ecode/html-inspector/releases/tag/inspector-v0.4.12 |
+| Assets | `html-inspector-extension-0.4.12.zip` (45,515 B, `sha256:190a0a9a…`) · `html-inspector-embed-0.4.12.zip` (33,588 B, `sha256:05e8d578…`), each with `.sha256` |
+| Default sheet | title **"HTML Inspector"**, drag-hint intro, Paste inspection; Inspect/Append rows hidden; `#fabDevMode` **gone**; no navigation |
+| Opt-in sheet | `?dev=1` or `data-html-inspector-dev="1"` (on `<html>` / the embed `<script>`) → title **"Developer tools"**, Inspect & copy + Append rows; URL unchanged |
+| Tests | ui 39/39 · protocol 38 · e2e **11 passed** (2 network-gated skipped) including both sheet modes; registry immutable/determinism green |
+| Docs | live docs regenerated: **11 frames**, including the distribution sheet (4) and the opted-in developer sheet (7); new "Developer tools are opt-in" chapter; sandbox documents the embedder opt-in |
+
+Why opt-in rather than host-detected: the decision belongs to the embedder, not to the serving
+context — the extension host stays sheet-less, the dashboard can keep its tools by passing
+`?dev=1` (DASH-600 addendum), and a public visitor never gets a developer switch or a reload.
 
 ## Summary
 

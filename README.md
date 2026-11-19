@@ -7,7 +7,7 @@ Extracted from `~/dev/menu-dashboard` (DASH-290a/b), where it lived as
 `menu-inspector@0.4.11`. This repo owns the source, the generated static
 registry, the extension shell, and the release flow.
 
-> **State: live.** Tag [`inspector-v0.4.11`](https://github.com/311ecode/html-inspector/releases/tag/inspector-v0.4.11)
+> **State: live.** Tag [`inspector-v0.4.12`](https://github.com/311ecode/html-inspector/releases/tag/inspector-v0.4.12)
 > carries the Chrome zip + the embeddable zip (each with a `.sha256`); the
 > registry is served from GitHub Pages. The import + release record is
 > [`INSP-001`](tickets/done/INSP-001-bootstrap-public-distribution-repo.md).

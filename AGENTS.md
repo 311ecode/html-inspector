@@ -11,9 +11,9 @@ own git repo with its own remote — commit to the repo a change belongs to, and
 never mix repos in one commit.
 
 **Repository state:** live. The inspector + extension were imported from
-`menu-dashboard` on 2026-11-19 and the first public release is cut:
-tag `inspector-v0.4.11`, Release assets for the Chrome zip + the embeddable zip,
-registry served from GitHub Pages. [`INSP-001`](tickets/done/INSP-001-bootstrap-public-distribution-repo.md)
+`menu-dashboard` on 2026-11-19 and the current release is
+`inspector-v0.4.12` (the bootstrap cut was `inspector-v0.4.11`): Release assets for
+the Chrome zip + the embeddable zip, registry served from GitHub Pages. [`INSP-001`](tickets/done/INSP-001-bootstrap-public-distribution-repo.md)
 is the bootstrap record; `menu-dashboard/tickets/new/DASH-600-*` is the consumer
 rewire on the dashboard side.
 
