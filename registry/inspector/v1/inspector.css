@@ -196,6 +196,16 @@
   padding: 0 4px 6px;
 }
 
+.fab-sheet-intro {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #71717a;
+  padding: 2px 4px 10px;
+}
+.fab-sheet-intro[hidden] {
+  display: none;
+}
+
 .fab-sheet-fallback {
   display: flex;
   flex-direction: column;

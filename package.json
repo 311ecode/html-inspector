@@ -1,6 +1,6 @@
 {
   "name": "html-inspector",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "description": "The HTML Inspector \u2014 an in-page inspection FAB (drag a block, copy URL/Path/HTML, paste it on another host) plus a thin Chrome MV3 shell. Distributed as GitHub Release zips and a static registry.",
   "license": "ISC",
   "private": false,

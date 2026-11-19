@@ -71,6 +71,10 @@ A ticket is not done because code works on a branch. Done means all of:
   the reason this repo exists).
 - **Build/test without a dashboard.** No code in this repo may require a running
   `menu-dashboard` process, its fixtures, or its absolute paths.
+- **Dev tools are opt-in, never public.** The distribution sheet exposes only the drag hint,
+  Paste inspection and the collected snapshots. The Inspect/Append switches appear only when the
+  page asks for them — `?dev=1` or `data-html-inspector-dev="1"` on `<html>`/the embed `<script>`
+  (INSP-007). There is no public switch and the bundle never rewrites the URL or reloads the page.
 - **Pushes go over SSH; the PAT is only for API calls** (repo create, Release
   assets, Pages). Token seams are documented in [`../rules/git.md`](../rules/git.md);
   a token never goes to argv, stdout, a committed file, or a log. The classic
