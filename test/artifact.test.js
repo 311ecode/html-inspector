@@ -31,7 +31,8 @@ test('extension artifact: explicit manifest version, expected entries, determini
   const b = artifact.buildExtensionArtifact({ repoRoot: ROOT });
 
   assert.ok(a.zip.equals(b.zip), 'two consecutive builds must be byte-identical');
-  assert.match(a.version, /^0\.1\.\d+$/);
+  assert.match(a.version, /^\d+\.\d+\.\d+$/);
+  assert.equal(a.version, JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')).version);
   assert.equal(a.version, JSON.parse(fs.readFileSync(path.join(ROOT, 'extension', 'manifest.json'), 'utf8')).version);
   assert.equal(a.file, `html-inspector-extension-${a.version}.zip`);
   assert.match(a.build, /^[0-9a-f]{64}$/);

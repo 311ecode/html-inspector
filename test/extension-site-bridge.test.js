@@ -142,6 +142,6 @@ test('registry latest (protocol 3) is the byte-identical v1 channel + vendor, an
   );
 
   const built = artifact.buildExtensionArtifact({ repoRoot: ROOT });
-  assert.match(built.version, /^0\.1\.\d+$/, 'the extension version is explicit in manifest.json');
+  assert.match(built.version, /^\d+\.\d+\.\d+$/, 'the extension version is explicit in manifest.json');
   assert.match(built.build, /^[0-9a-f]{64}$/);
 });
