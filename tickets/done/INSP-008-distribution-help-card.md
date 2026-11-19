@@ -1,9 +1,21 @@
 # INSP-008 — distribution help card: compact copy, Docs/GitHub/version line (no public switches)
 
-**Project:** html-inspector · **Status:** NEW (implementing) · **Created:** 2026-11-19 ·
+**Project:** html-inspector · **Status:** DONE (landed 2026-11-19, released v0.4.13) · **Created:** 2026-11-19 ·
 **Origin:** user after INSP-007 — the distribution tap should be "a really small pop-up that you
 can drag and drop, blah blah, and maybe a link to the GitHub".
 **Related:** INSP-007 (dev-tools opt-in), INSP-006 (docs/sandbox), v0.4.13.
+
+## 0. Landed — 2026-11-19
+
+| Fact | Value |
+|---|---|
+| Release | https://github.com/311ecode/html-inspector/releases/tag/inspector-v0.4.13 |
+| Assets | `html-inspector-extension-0.4.13.zip` (46,021 B, `sha256:89aa2ef1…`) · `html-inspector-embed-0.4.13.zip` (34,092 B, `sha256:b6cc3fea…`) + `.sha256` |
+| Card | title "HTML Inspector" · *"Drag the round target onto a block, then lift — URL, path and HTML are copied."* · *"Works with mouse and touch."* · 📋 Paste inspection · **Docs · GitHub · v0.4.13** footer; snapshots only when non-empty; no auto-show, no navigation |
+| Version chip | the registry generator stamps `__INSPECTOR_VERSION__` with the package version (`VERSION = '0.4.13'` verified in the published `v1` bundle); source fixtures hide the chip |
+| Dev sheet | same footer (switches unchanged) |
+| Tests | ui 39/39 · protocol 38 · artifact+site-bridge 9 · e2e **11 passed** (2 network-gated skipped — asserts the copy, both link hrefs with `target="_blank" rel="…noopener…"`, and `#fabVersion` == package version on the served channel) |
+| Docs | regenerated: 11 frames, frame 4 is the new compact card; docs/sandbox live |
 
 ## Summary
 
