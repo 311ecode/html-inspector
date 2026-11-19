@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A third-party site</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; margin: 40px auto; max-width: 720px; }
+  .card { border: 1px solid #ccc; border-radius: 8px; padding: 16px; margin: 24px 0; }
+</style>
+</head>
+<body>
+<h1>A third-party page</h1>
+<p>This page knows nothing about the inspector. It only exists so the tests can prove
+   the tool works when somebody else includes it.</p>
+
+<article class="card" id="first-block">
+  <h2>First block</h2>
+  <p id="first-copy">The inspector should be able to pick this article and copy its HTML.</p>
+</article>
+
+<section class="card" id="second-block">
+  <h2>Second block</h2>
+  <p id="second-copy">A second pickable block.</p>
+</section>
+</body>
+</html>

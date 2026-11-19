@@ -38,6 +38,22 @@ Or vendor the same two files from the `html-inspector-embed-<version>.zip` Relea
 Version, layout and the release flow contracts live in the project
 [`AGENTS.md`](AGENTS.md) and [`tickets/README.md`](tickets/README.md).
 
+## Tests
+
+```bash
+npm test          # node suites: registry drift/immutability, protocol, artifacts, site-bridge, vendor
+npm run test:ui   # Playwright: the FAB's fixture-page suite
+npm run test:e2e  # Playwright: the shipped distribution — embed on a plain third-party page
+                  # + the unpacked Chrome extension loaded in a real Chromium
+npm run test:e2e:live  # same, plus Pages/Release integrity over the network
+```
+
+The extension e2e loads a copy of `extension/` whose manifest adds
+`host_permissions: ["http://localhost/*"]` — Playwright cannot click browser
+toolbar UI, so this stands in for the `activeTab` grant a real user gives by
+invoking the action. The shipped manifest is asserted unchanged by
+`test/extension-site-bridge.test.js`.
+
 ## Work tracking
 
 `INSP-…` tickets under `tickets/`; fresh agents start at

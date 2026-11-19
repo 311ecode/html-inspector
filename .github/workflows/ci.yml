@@ -64,6 +64,25 @@ jobs:
           fi
           echo "versions are explicit"
 
+  e2e:
+    # INSP-002 — the shipped distribution end to end: the HTML embed on a plain
+    # third-party page and the unpacked extension in a real Chromium. Hermetic
+    # (test/e2e/live.spec.js is skipped unless HTML_INSPECTOR_LIVE=1, i.e. never
+    # in CI). Still verify-only: no push, no release.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: embed + extension e2e (hermetic)
+        run: npx playwright test --project=e2e
+
   ui:
     runs-on: ubuntu-latest
     steps:

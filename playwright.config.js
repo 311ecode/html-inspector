@@ -30,5 +30,13 @@ module.exports = defineConfig({
             testDir: './inspector/test',
             testMatch: '**/*.spec.js',
         },
+        {
+            // INSP-002 — the shipped distribution, end to end: the HTML embed on a
+            // plain third-party page and the unpacked Chrome extension in a real
+            // Chromium (test/e2e/live.spec.js is network-gated by HTML_INSPECTOR_LIVE=1).
+            name: 'e2e',
+            testDir: './test/e2e',
+            testMatch: '**/*.spec.js',
+        },
     ],
 });

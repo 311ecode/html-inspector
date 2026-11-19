@@ -84,6 +84,10 @@ A ticket is not done because code works on a branch. Done means all of:
 npm ci
 npm test                                      # protocol + artifact + site-bridge + registry + vendor (no dashboard, no browser)
 npm run test:ui                               # Playwright fixture-page suite (ports 8091/8093)
+npm run test:e2e                              # INSP-002: the HTML embed on a plain third-party page +
+                                              # the unpacked extension in Chromium (hermetic, headless)
+npm run test:e2e:live                         # also proves the PUBLISHED distribution (Pages sha256 +
+                                              # the released extension zip) — network, not CI
 node scripts/publish-inspector.cjs            # --check is the default; --write regenerates registry/
 node scripts/check-inspector-registry.cjs --immutable --determinism
 node extension/tools/sync-vendor.mjs --check

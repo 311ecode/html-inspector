@@ -1,7 +1,7 @@
 {
   "name": "html-inspector",
   "version": "0.4.11",
-  "description": "The HTML Inspector — an in-page inspection FAB (drag a block, copy URL/Path/HTML, paste it on another host) plus a thin Chrome MV3 shell. Distributed as GitHub Release zips and a static registry.",
+  "description": "The HTML Inspector \u2014 an in-page inspection FAB (drag a block, copy URL/Path/HTML, paste it on another host) plus a thin Chrome MV3 shell. Distributed as GitHub Release zips and a static registry.",
   "license": "ISC",
   "private": false,
   "files": [
@@ -20,7 +20,9 @@
     "registry:check": "node scripts/publish-inspector.cjs",
     "registry:write": "node scripts/publish-inspector.cjs --write",
     "sync:vendor": "node extension/tools/sync-vendor.mjs",
-    "release": "node scripts/release.cjs"
+    "release": "node scripts/release.cjs",
+    "test:e2e": "playwright test --project=e2e",
+    "test:e2e:live": "HTML_INSPECTOR_LIVE=1 playwright test --project=e2e"
   },
   "devDependencies": {
     "playwright": "^1.61.0",
