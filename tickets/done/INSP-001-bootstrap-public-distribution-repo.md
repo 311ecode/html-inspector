@@ -25,7 +25,7 @@ FAB and becomes a **consumer** of this repo (its own DASH ticket, §8).
 |---|---|
 | Repo | https://github.com/311ecode/html-inspector (public, `main` = the release commit) |
 | Release | https://github.com/311ecode/html-inspector/releases/tag/inspector-v0.4.11 |
-| Extension asset | `html-inspector-0.1.23-86c7316.zip` — 45,132 B, `sha256:dc9bb26be35a8f1c99b2c26e899654735ae5da010714fde7088aaa72ace2cfb5` |
+| Extension asset | `html-inspector-extension-0.4.11.zip` — 45,131 B, `sha256:47a7b65f746cf0c1dcfc390b132050eae4778618af54bfd8b7f2b19375fd43f9` |
 | Embed asset | `html-inspector-embed-0.4.11.zip` — 33,204 B, `sha256:1d990617fe817a3ef22375da638e0749e58ce9ea654ebff64227fe80a7a898a2` |
 | Registry (Pages) | `https://311ecode.github.io/html-inspector/registry/index.json` (+ `inspector/v1/`) — served `inspector.js` sha256 identical to the committed file |
 | CI | `.github/workflows/ci.yml` — **verify-only** (never pushes/releases); green on `e68594d` (`verify` job: registry drift/immutable/determinism, vendor, protocol+artifact+site-bridge, binary guard, version-derivation guard; `ui` job: Playwright fixture suite) |
@@ -34,10 +34,10 @@ FAB and becomes a **consumer** of this repo (its own DASH ticket, §8).
 What actually landed vs this ticket's plan:
 
 - **No history migration** — two import commits, current tree only (`registry/` = 0.4.11 + `v1/`).
-- **Versions explicit** — `package.json` 0.4.11, `extension/manifest.json` 0.1.23; `lib/artifact.js` replaces
+- **One explicit version** — `package.json` 0.4.11 stamped into `inspector/package.json` and `extension/manifest.json` at release time (the first cut's split 0.4.11/0.1.23 was re-cut before any consumer); `lib/artifact.js` replaces
   the dashboard's `lib/extension-artifact.js` (clean rewrite: deterministic zip only, no `app-watch`,
   no git-history derivation).
-- **Release tag is `inspector-v<version>`** (the verifier's contract), not plain `v<version>`.
+- **Release tag is `inspector-v<version>`** (the verifier's contract), not plain `v<version>`; assets are `html-inspector-extension-<version>.zip` + `html-inspector-embed-<version>.zip` (+ `.sha256`), and the release notes are generated from the real built files.
 - **`scripts/release.cjs`** implements the whole flow from this side (`--bump`, `--version`, `--dry-run`,
   `--pages`); CI only verifies.
 - **Pages enabled** on `main` (serves the registry tree).

@@ -47,7 +47,7 @@ A ticket is not done because code works on a branch. Done means all of:
 4. **Generated files regenerated, never hand-merged.** If a ticket touches
    `inspector/src/**`, the registry is rebuilt with
    `node scripts/publish-inspector.cjs --write`; if it touches the registry,
-   `node tools/sync-vendor.mjs` refreshes `extension/vendor/`. Never edit a
+   `node extension/tools/sync-vendor.mjs` refreshes `extension/vendor/`. Never edit a
    generated file.
 5. **If the ticket ships a version:** tag `inspector-v<version>` exists, the GitHub Release
    carries both zips + `.sha256`, and `node scripts/check-inspector-registry.cjs
