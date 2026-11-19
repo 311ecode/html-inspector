@@ -1,0 +1,15 @@
+# build output — release zips are GitHub Release assets, never committed
+dist/
+
+# dependencies
+node_modules/
+
+# test/report output
+test-results/
+playwright-report/
+blob-report/
+*.log
+
+# local scratch
+.DS_Store
+.tmp/
