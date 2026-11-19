@@ -3,7 +3,7 @@
   "package": "menu-inspector",
   "version": "0.4.15",
   "protocolVersion": 3,
-  "publishedAt": "2026-11-19T23:13:54+01:00",
+  "publishedAt": "2026-11-19T23:28:24+01:00",
   "files": [
     {
       "name": "inspector.js",
