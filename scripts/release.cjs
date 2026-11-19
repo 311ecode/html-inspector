@@ -66,7 +66,8 @@ function ok(msg) { process.stdout.write(`✓  ${msg}\n`); }
 function log(msg) { process.stdout.write(`▶  ${msg}\n`); }
 
 function run(cmd, cmdArgs, opts) {
-    return execFileSync(cmd, cmdArgs, Object.assign({ cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }, opts)).trim();
+    const out = execFileSync(cmd, cmdArgs, Object.assign({ cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }, opts));
+    return typeof out === 'string' ? out.trim() : '';
 }
 function git(...a) { return run('git', a, { env: Object.assign({}, process.env, { GIT_SSH_COMMAND: process.env.GIT_SSH_COMMAND || SSH_BYPASS }) }); }
 function gitRaw(...a) { return run('git', a, { stdio: ['ignore', 'inherit', 'inherit'] }); }
