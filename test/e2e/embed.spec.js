@@ -174,3 +174,59 @@ test('?dev=1 opts into the developer sheet without a switch or a reload', async 
     await expect(page.locator('#fabVersion')).toHaveText('v' + pkg.version);
     expect(page.url()).toBe(before); // opt-in is resolved at boot; nothing navigates
 });
+
+// INSP-009 — the display-tier camera is pinned to THIS tab. The browser's own
+// picker cannot be driven by Playwright, so these tests stub getDisplayMedia
+// with a canvas stream: same-shape frame = captured; wrong-shape = refused.
+async function stubDisplayCapture(page, width, height) {
+    await page.evaluate(({ width, height }) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(0, 0, width, height);
+        const stream = canvas.captureStream(30);
+        Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', {
+            configurable: true,
+            value: async () => stream,
+        });
+        window.__capturedImage = null;
+        if (navigator.clipboard && navigator.clipboard.write) {
+            navigator.clipboard.write = async (items) => {
+                const blob = await items[0].getType('image/png');
+                window.__capturedImage = { type: blob.type, size: blob.size };
+            };
+        }
+    }, { width, height });
+}
+
+async function pickFirstBlock(page) {
+    const block = page.locator('#first-copy');
+    const box = await block.boundingBox();
+    await dragFabTo(page, box.x + box.width / 2, box.y + box.height / 2);
+    await expect(page.locator('.inspector-overlay')).toBeVisible();
+    await expect(page.locator('.inspector-camera')).toBeVisible();
+}
+
+test('📷 captures the settled block when the shared surface is this tab', async ({ page, context }) => {
+    const errors = await openEmbed(page, context);
+    await stubDisplayCapture(page, 1280, 800); // this viewport's shape
+    await pickFirstBlock(page);
+    await page.locator('.inspector-camera').click();
+    await expect(page.locator('.inspector-toast')).toContainText('Copied image');
+    const captured = await page.evaluate(() => window.__capturedImage);
+    expect(captured).not.toBeNull();
+    expect(captured.type).toBe('image/png');
+    expect(captured.size).toBeGreaterThan(0);
+    expect(errors).toEqual([]);
+});
+
+test('📷 refuses a surface that is not this tab (no shifted crop)', async ({ page, context }) => {
+    await openEmbed(page, context);
+    await stubDisplayCapture(page, 1000, 300); // a different surface's shape
+    await pickFirstBlock(page);
+    await page.locator('.inspector-camera').click();
+    await expect(page.locator('.inspector-toast')).toContainText('does not match this tab');
+    expect(await page.evaluate(() => window.__capturedImage)).toBeNull();
+});

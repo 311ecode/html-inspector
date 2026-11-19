@@ -32,6 +32,7 @@
     border-radius:12px; border:1px solid var(--line);
     background:linear-gradient(90deg,rgba(255,166,87,.10),rgba(242,204,96,.08),rgba(63,185,80,.07),rgba(88,166,255,.10)); }
   .try a { font-weight:600; }
+  .note { margin:14px 0 0; padding:10px 14px; border-left:3px solid var(--line); background:var(--panel); border-radius:8px; color:var(--muted); font-size:14px; }
   pre.clip::before { content:"clipboard payload, copied live"; display:block; font:11px/1.4 ui-monospace,monospace; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
   .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(440px,1fr)); gap:20px; margin:22px 0 8px; }
   figure.beat { position:relative; margin:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
@@ -61,8 +62,8 @@
   <h1>HTML Inspector</h1>
   <p class="tagline">Drag a block on any page, get <code>URL: / Path: / HTML:</code> on the clipboard. Two files to embed, or one Chrome extension.</p>
   <div class="badges">
-    <span class="badge">v0.4.13</span>
-    <span class="badge">registry 0.4.13</span>
+    <span class="badge">v0.4.14</span>
+    <span class="badge">registry 0.4.14</span>
     <span class="badge"><a href="https://github.com/311ecode/html-inspector/releases">releases</a></span>
     <span class="badge"><a href="https://311ecode.github.io/html-inspector/registry/index.json">registry index</a></span>
     <span class="badge"><a href="https://github.com/311ecode/html-inspector">source</a></span>
@@ -73,6 +74,7 @@
   <h2>What it is</h2>
   <p>A mobile-friendly inspection FAB for any web page. Drag the button onto a block-level element and lift your finger: the page URL, the element path and its outerHTML land on the clipboard, ready to paste into a ticket, a chat or an AI assistant.</p>
 <p>It is deliberately tiny: a zero-dependency browser script plus a stylesheet. There is no dashboard, no build step, no account. The same bundle is served as a static registry (GitHub Pages) and ships as two zips on GitHub Releases: an embeddable bundle and a Chrome MV3 shell that injects it into any tab on demand.</p>
+  
   
   <div class="strip"><figure class="beat">
       <img src="assets/01-embed-idle.jpg" alt="Embedded on a plain third-party page: the FAB waits in the corner." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 1: Embedded on a plain third-party page: the FAB waits in the corner.">
@@ -89,12 +91,14 @@
 <p><strong>Anyone briefing an AI.</strong> Picked blocks carry a stable XPath/selector and a Markdown translation, so &quot;fix this&quot; arrives with the exact context instead of a screenshot.</p>
   
   
+  
 </section>
 <section id="embed">
   <h2>Embed it on any page</h2>
   <p>Two lines, served from the published registry. The floating channel (<code>v1/</code>) follows the latest release, so a bundle update needs no page deploy.</p>
   <pre class="cmd"><code>&lt;link rel=&quot;stylesheet&quot; href=&quot;https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.css&quot;&gt;
 &lt;script defer src=&quot;https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.js&quot;&gt;&lt;/script&gt;</code></pre>
+  <p class="note">Copy as image (📷): a plain page can only ask the browser to share a tab — pick THIS tab; other tabs and the whole screen are refused (the crop is viewport-relative, and the extension captures silently).</p>
   <div class="strip"><figure class="beat">
       <img src="assets/02-embed-drag.jpg" alt="Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 2: Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb.">
       <span class="zoom-hint" aria-hidden="true">⤢</span>
@@ -105,7 +109,7 @@
       <img src="assets/03-embed-copied.jpg" alt="Lift: the payload is on the clipboard (URL, path and outerHTML were just copied)." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 3: Lift: the payload is on the clipboard (URL, path and outerHTML were just copied).">
       <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">3</span>Lift: the payload is on the clipboard (URL, path and outerHTML were just copied).</figcaption>
-      <pre class="clip"><code><span class="pk pk-url">URL:</span> http://127.0.0.1:36499/embed
+      <pre class="clip"><code><span class="pk pk-url">URL:</span> http://127.0.0.1:45025/embed
 <span class="pk pk-path">Path:</span> article#first-block.card &gt; p#first-copy
 <span class="pk pk-html">HTML:</span>
 <span class="ph">&lt;p id=&quot;first-copy&quot;&gt;The inspector should be able to pick this article and copy its HTML.&lt;/p&gt;</span></code></pre>
@@ -131,6 +135,7 @@
 {&quot;schema&quot;:&quot;evidence-context/v1&quot;,&quot;facts&quot;:{&quot;app&quot;:&quot;Example Shop&quot;,&quot;suite&quot;:&quot;orders-e2e&quot;}}
 &lt;/script&gt;</code></pre>
   
+  
 </section>
 <section id="metadata-block">
   <h2>Per-block evidence</h2>
@@ -141,11 +146,12 @@
 {&quot;order-card-42&quot;:{&quot;captured&quot;:&quot;https://example-shop.test/orders/42&quot;,
   &quot;run&quot;:&quot;39120487731 · orders-e2e&quot;, &quot;dom&quot;:{&quot;path&quot;:&quot;html/orders/42.html&quot;}}}
 &lt;/script&gt;</code></pre>
+  
   <div class="strip"><figure class="beat">
       <img src="assets/06-embed-metadata.jpg" alt="The paragraph inside an annotated card: Context, Captured and Evidence land before the HTML." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 6: The paragraph inside an annotated card: Context, Captured and Evidence land before the HTML.">
       <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">6</span>The paragraph inside an annotated card: Context, Captured and Evidence land before the HTML.</figcaption>
-      <pre class="clip"><code><span class="pk pk-url">URL:</span> http://127.0.0.1:36499/embed-metadata
+      <pre class="clip"><code><span class="pk pk-url">URL:</span> http://127.0.0.1:45025/embed-metadata
 <span class="pk pk-path">Path:</span> article#order-card.card[data-env=&quot;staging&quot;] &gt; p#meta-copy.total
 <span class="pk pk-context">Context:</span>
   <span class="pfk">app:</span> <span class="pfv">Example Shop</span>
@@ -170,6 +176,7 @@
 <p>Nothing here can break the copy: a malformed island, a missing entry for the id or an empty entry degrades to the plain payload — never an exception. The frozen format is covered by <code>inspector/test/protocol.test.js</code>, and the embed above is re-proved on every <code>npm run test:e2e</code>. The breadcrumb <code>Path:</code> carries the element's identity: its <code>id</code>, up to two real classes, and the dashboard's <code>data-env</code> / <code>data-host</code> attributes — so naming your blocks well makes the path alone useful on the receiving dashboard.</p>
   <pre class="cmd"><code></code></pre>
   
+  
 </section>
 <section id="devtools">
   <h2>Developer tools are opt-in</h2>
@@ -178,6 +185,7 @@
 <p>Nothing reloads the page, nothing rewrites the URL, and there is no switch a visitor could flip — the capability stays in the bundle, the public sheet never shows it.</p>
   <pre class="cmd"><code>&lt;script defer src=&quot;…/registry/inspector/v1/inspector.js&quot;
         data-html-inspector-dev=&quot;1&quot;&gt;&lt;/script&gt;</code></pre>
+  
   <div class="strip"><figure class="beat">
       <img src="assets/07-embed-devsheet.jpg" alt="Opted in: the same tap opens the full Developer tools sheet with the Inspect and Append switches." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 7: Opted in: the same tap opens the full Developer tools sheet with the Inspect and Append switches.">
       <span class="zoom-hint" aria-hidden="true">⤢</span>
@@ -191,6 +199,7 @@
   <pre class="cmd"><code>1. Download html-inspector-extension-&lt;version&gt;.zip from the latest release
 2. chrome://extensions  -&gt;  Developer mode  -&gt;  Load unpacked  -&gt;  the unzipped folder
 3. Press Alt+Shift+I on any page</code></pre>
+  
   <div class="strip"><figure class="beat">
       <img src="assets/08-extension-bare.jpg" alt="A bare page before the shortcut: no inspector, nothing injected." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 8: A bare page before the shortcut: no inspector, nothing injected.">
       <span class="zoom-hint" aria-hidden="true">⤢</span>
@@ -213,7 +222,7 @@
       <img src="assets/11-extension-copied.jpg" alt="Lift: the copied payload comes from the injected bundle, not from the page." loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame 11: Lift: the copied payload comes from the injected bundle, not from the page.">
       <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">11</span>Lift: the copied payload comes from the injected bundle, not from the page.</figcaption>
-      <pre class="clip"><code><span class="pk pk-url">URL:</span> http://127.0.0.1:36499/
+      <pre class="clip"><code><span class="pk pk-url">URL:</span> http://127.0.0.1:45025/
 <span class="pk pk-path">Path:</span> article#first-block.card &gt; p#first-copy
 <span class="pk pk-html">HTML:</span>
 <span class="ph">&lt;p id=&quot;first-copy&quot;&gt;The inspector should be able to pick this article and copy its HTML.&lt;/p&gt;</span></code></pre>
@@ -225,8 +234,9 @@
   <pre class="cmd"><code>curl -sL https://311ecode.github.io/html-inspector/registry/index.json
 # latest, channel paths and per-file sha256 for every published version</code></pre>
   
+  
 </section>
-<footer>Generated from the live code by <code>npm run docs</code> (<code>scripts/docs.cjs</code>). The frames above are real browser runs of the committed registry and the unpacked extension — regenerate after changing the FAB, the extension or the registry.<br>Generated from commit <code>c2db66e</code>.</footer>
+<footer>Generated from the live code by <code>npm run docs</code> (<code>scripts/docs.cjs</code>). The frames above are real browser runs of the committed registry and the unpacked extension — regenerate after changing the FAB, the extension or the registry.<br>Generated from commit <code>76b63c0</code>.</footer>
 </main>
 <div id="lightbox" hidden>
   <button id="lbClose" type="button" aria-label="Close enlarged frame">✕</button>

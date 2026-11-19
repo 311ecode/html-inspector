@@ -1,6 +1,6 @@
 {
   "name": "menu-inspector",
-  "version": "0.4.13",
+  "version": "0.4.14",
   "description": "In-page inspector FAB \u2014 drag a block, copy URL/Path/HTML, paste it on another host. A zero-dependency browser tool distributed from the html-inspector registry.",
   "protocolVersion": 3,
   "files": [

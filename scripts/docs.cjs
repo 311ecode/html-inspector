@@ -293,6 +293,7 @@ function render(sections, opts) {
   <h2>${esc(section.heading)}</h2>
   ${paragraphs(section.body)}
   ${section.code ? codeBlock(section.code) : ''}
+  ${section.note ? `<p class="note">${inline(section.note)}</p>` : ''}
   ${frames ? `<div class="strip">${frames}</div>` : ''}
 </section>`;
     }).join('\n');
@@ -331,6 +332,7 @@ function render(sections, opts) {
     border-radius:12px; border:1px solid var(--line);
     background:linear-gradient(90deg,rgba(255,166,87,.10),rgba(242,204,96,.08),rgba(63,185,80,.07),rgba(88,166,255,.10)); }
   .try a { font-weight:600; }
+  .note { margin:14px 0 0; padding:10px 14px; border-left:3px solid var(--line); background:var(--panel); border-radius:8px; color:var(--muted); font-size:14px; }
   pre.clip::before { content:"clipboard payload, copied live"; display:block; font:11px/1.4 ui-monospace,monospace; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
   .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(440px,1fr)); gap:20px; margin:22px 0 8px; }
   figure.beat { position:relative; margin:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }

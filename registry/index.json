@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "package": "menu-inspector",
-  "latest": "0.4.13",
+  "latest": "0.4.14",
   "channel": "v1",
   "channelPath": "inspector/v1/",
   "versions": [
@@ -35,6 +35,17 @@
       "deprecated": false,
       "files": {
         "inspector.js": "13b368a70f50bc2e864e3050064766a3250cbde2022dcbb08126e73046266cbe",
+        "inspector.css": "b86973b368bbbb2d30b3e5f8fcecdd0606954e03985339dc744d6222a1ae25fb"
+      }
+    },
+    {
+      "version": "0.4.14",
+      "path": "inspector/0.4.14/",
+      "protocolVersion": 3,
+      "publishedAt": "2026-11-19T22:46:07+01:00",
+      "deprecated": false,
+      "files": {
+        "inspector.js": "b4320e5a4cc19df3c575bca807ff9a0b49ca75be3eae688d34fe7b3b67471b0a",
         "inspector.css": "b86973b368bbbb2d30b3e5f8fcecdd0606954e03985339dc744d6222a1ae25fb"
       }
     }
