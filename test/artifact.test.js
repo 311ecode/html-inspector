@@ -33,7 +33,7 @@ test('extension artifact: explicit manifest version, expected entries, determini
   assert.ok(a.zip.equals(b.zip), 'two consecutive builds must be byte-identical');
   assert.match(a.version, /^0\.1\.\d+$/);
   assert.equal(a.version, JSON.parse(fs.readFileSync(path.join(ROOT, 'extension', 'manifest.json'), 'utf8')).version);
-  assert.equal(a.file, `html-inspector-${a.version}-${artifact.shortSha(a.sha)}.zip`);
+  assert.equal(a.file, `html-inspector-extension-${a.version}.zip`);
   assert.match(a.build, /^[0-9a-f]{64}$/);
 
   const entries = zipEntries(a.zip);

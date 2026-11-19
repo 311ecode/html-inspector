@@ -63,10 +63,12 @@ A ticket is not done because code works on a branch. Done means all of:
   Old versions are not pruned without a ticket (served embeds pin them).
 - **`extension/vendor/` is generated** from `registry/inspector/v1/` by
   `tools/sync-vendor.mjs` — the drift guard compares them byte-for-byte.
-- **Version is explicit, never derived from git.** `package.json#version` is the
-  single source for the inspector package; the extension's `manifest.json`
-  version follows the documented bump rule. `git rev-list --count` is banned
-  here (the counter restarts in a new repo — the reason this repo exists).
+- **One explicit version, never derived from git.** `package.json#version` is
+  the single source: the release stamps it into `inspector/package.json` and
+  `extension/manifest.json`, and tags `inspector-v<version>`. Asset names:
+  `html-inspector-extension-<version>.zip` + `html-inspector-embed-<version>.zip`.
+  `git rev-list --count` is banned here (the counter restarts in a new repo —
+  the reason this repo exists).
 - **Build/test without a dashboard.** No code in this repo may require a running
   `menu-dashboard` process, its fixtures, or its absolute paths.
 - **Pushes go over SSH; the PAT is only for API calls** (repo create, Release
@@ -97,6 +99,10 @@ GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs --dry-run  # build only
 GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs --pages    # also (re)enable Pages
 ```
 
+Asset names are clean and versioned (`html-inspector-extension-<version>.zip`,
+`html-inspector-embed-<version>.zip` + `.sha256` siblings); the release notes are
+generated from the actual built files (sizes + sha256 + embed snippet + install
+steps), never placeholders.
 The script regenerates the registry, runs every gate, builds both zips into
 `dist/` (gitignored), commits the version bump, tags `inspector-v<version>`,
 pushes `main` + tag over SSH, creates the Release, uploads the zips (skipping an

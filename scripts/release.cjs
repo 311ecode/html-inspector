@@ -28,10 +28,10 @@
 //
 // Flags: --bump · --version X.Y.Z · --dry-run · --skip-tests · --pages
 //
-// Version rule (explicit, never derived): --bump increments the package
-// (inspector) patch AND the extension manifest patch; --version sets the
-// package version and leaves the extension manifest alone. Both are stamped
-// from committed files, so a release is reproducible from the tag.
+// Version rule (explicit, never derived): ONE version number covers the FAB,
+// the registry and the Chrome extension. --bump increments its patch; --version
+// sets it outright. package.json#version is stamped into inspector/package.json
+// and extension/manifest.json at release time, so the tag is reproducible.
 // Token: read from GITHUB_TEST_TOKEN or GH_TOKEN (never argv). The fine-grained
 // drop-ins cannot create repos; this script does not create repos either — the
 // repo exists already, it only pushes + uploads.
@@ -126,7 +126,19 @@ function setVersion(version) {
     const inner = readJson(innerPath);
     inner.version = version;
     writeJson(innerPath, inner);
-    ok(`version set to ${version} (package.json + inspector/package.json)`);
+    syncExtensionVersion(version);
+    ok(`version set to ${version} (package.json + inspector/package.json + extension/manifest.json)`);
+}
+
+/** One version number for everything: the extension manifest follows the package. */
+function syncExtensionVersion(version) {
+    const extPath = path.join(ROOT, 'extension', 'manifest.json');
+    const ext = readJson(extPath);
+    if (ext.version !== version) {
+        ext.version = version;
+        writeJson(extPath, ext);
+        log(`extension/manifest.json version -> ${version}`);
+    }
 }
 
 function currentVersion() {
@@ -142,13 +154,7 @@ function nextPatch(version) {
 /** --bump: package (inspector) patch + extension manifest patch, both explicit. */
 function bumpVersions() {
     const next = nextPatch(currentVersion());
-    setVersion(next);
-    const extPath = path.join(ROOT, 'extension', 'manifest.json');
-    const ext = readJson(extPath);
-    const extNext = nextPatch(ext.version);
-    ext.version = extNext;
-    writeJson(extPath, ext);
-    ok(`extension/manifest.json version ${ext.version} -> ${extNext}`);
+    setVersion(next);   // also stamps extension/manifest.json — one version
     return next;
 }
 
@@ -194,7 +200,7 @@ function build() {
         fs.writeFileSync(file, a.zip);
         const digest = artifact.sha256(a.zip);
         fs.writeFileSync(file + '.sha256', `${digest}  ${a.file}\n`);
-        assets.push({ name: a.file, file, digest, bytes: a.bytes, sidecar: file + '.sha256' });
+        assets.push({ kind: a.kind, name: a.file, file, digest, bytes: a.bytes, sidecar: file + '.sha256' });
         log(`built ${a.file} (${a.bytes} B) sha256 ${digest}`);
     }
     ok(`built ${assets.length} artifacts into dist/ (never committed)`);
@@ -232,6 +238,48 @@ function commitTagPush(version, assets) {
 
 // ── 6. publish the assets ──────────────────────────────────────────────
 
+/**
+ * releaseBody(tag, assets) — the release page is a product page: real asset
+ * names/sizes/hashes, the copy-paste embed snippet and the extension install
+ * steps. Never placeholders.
+ */
+function releaseBody(tag, assets) {
+    const version = tag.replace(/^inspector-v/, '');
+    const ext = assets.find((a) => a.kind === 'extension') || assets[0];
+    const embed = assets.find((a) => a.kind === 'embed') || assets[1];
+    const row = (a) => `| \`${a.name}\` | ${a.bytes.toLocaleString('en-US')} B | \`${a.digest}\` |`;
+    const pages = `https://${ORG}.github.io/${REPO}`;
+    return [
+        `**HTML Inspector v${version}** — the in-page inspection FAB (drag a block, copy \`URL: / Path: / HTML:\`) and its Chrome MV3 shell.`,
+        '',
+        '| asset | size | sha256 |',
+        '|---|---|---|',
+        row(ext),
+        row(embed),
+        '',
+        'Each zip ships beside a `.zip.sha256` file; the zips are deterministic — the commit history never carries binaries.',
+        '',
+        '### Embed the FAB in any page',
+        '',
+        '```html',
+        `<link rel="stylesheet" href="${pages}/registry/inspector/v1/inspector.css">`,
+        `<script defer src="${pages}/registry/inspector/v1/inspector.js"></script>`,
+        '```',
+        '',
+        `Or vendor the two files from \`${embed.name}\`.`,
+        '',
+        '### Chrome extension',
+        '',
+        `1. Download \`${ext.name}\` and unzip it.`,
+        '2. Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, select the unzipped `html-inspector-' + version + '` folder.',
+        '3. Press `Alt+Shift+I` on any page (or click the toolbar button) to inject the FAB.',
+        '',
+        '### Registry (HTTP)',
+        '',
+        `Latest index: ${pages}/registry/index.json · floating channel: ${pages}/registry/inspector/v1/`,
+    ].join('\n');
+}
+
 async function publish(tag, assets) {
     const rel = await api('GET', `/repos/${ORG}/${REPO}/releases/tags/${tag}`);
     let release = rel.status === 200 ? rel.json : null;
@@ -239,16 +287,7 @@ async function publish(tag, assets) {
         const created = await api('POST', `/repos/${ORG}/${REPO}/releases`, JSON.stringify({
             tag_name: tag,
             name: `HTML Inspector ${tag.replace(/^inspector-v/, 'v')}`,
-            body: [
-                'Deterministic release artifacts — the commit history never carries binaries.',
-                '',
-                '| asset | what |',
-                '|---|---|',
-                '| `html-inspector-<ver>-<sha>.zip` | Chrome MV3 shell — load unpacked / Web Store upload |',
-                '| `html-inspector-embed-<inspver>.zip` | `inspector.js` + `inspector.css` for embedding the FAB |',
-                '',
-                'Each zip ships beside a `.sha256` file. The static registry is served from the repo (see Pages).',
-            ].join('\n'),
+            body: releaseBody(tag, assets),
         }));
         if (created.status !== 201) die(`create release failed: ${created.status} ${created.text}`);
         release = created.json;
@@ -323,6 +362,7 @@ async function pages() {
     if (versionArg && bump) die('use either --version or --bump, not both');
     if (versionArg && versionArg !== currentVersion()) setVersion(versionArg);
     const version = bump ? bumpVersions() : (versionArg || currentVersion());
+    syncExtensionVersion(version);   // one version everywhere, also on a re-cut
     log(`releasing html-inspector ${version} (tag inspector-v${version})${dryRun ? ' [dry-run]' : ''}`);
     regenerate();
     gates();

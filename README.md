@@ -21,9 +21,9 @@ registry, the extension shell, and the release flow.
 <script defer src="https://311ecode.github.io/html-inspector/registry/inspector/v1/inspector.js"></script>
 ```
 
-Or vendor the same two files from the `html-inspector-embed-<ver>.zip` Release asset.
+Or vendor the same two files from the `html-inspector-embed-<version>.zip` Release asset.
 
-**Chrome extension** — download `html-inspector-<ver>-<sha>.zip` from the latest
+**Chrome extension** — download `html-inspector-extension-<version>.zip` from the latest
 [Release](https://github.com/311ecode/html-inspector/releases), unzip, then
 `chrome://extensions` → Developer mode → Load unpacked.
 
