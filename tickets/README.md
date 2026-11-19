@@ -42,4 +42,4 @@ letter suffixes (`INSP-002a/b/c`) when one topic needs several hands.
 
 | Ticket | Status | What it does | Remaining / where a fresh agent starts |
 |---|---|---|---|
-| **INSP-001** public distribution repo bootstrap | NEW (planning; release mechanics probed live 2026-11-19 — repo create + SSH push + tag + Release assets + hash round-trip green) | import inspector/ + extension/ + registry/ from `menu-dashboard`, one explicit-version release, both zips as GitHub Release assets, CI ported | **no import yet** — see [`new/INSP-001-bootstrap-public-distribution-repo.md`](new/INSP-001-bootstrap-public-distribution-repo.md) §7.1 for the proven flow + `tickets/assets/INSP-001/` for the harness |
+| **INSP-001** public distribution repo bootstrap | DONE (2026-11-19) | imported inspector/ + extension/ + registry/ from `menu-dashboard`, explicit versions, both zips as GitHub Release assets, verify-only CI, Pages registry | landed: repo public, `inspector-v0.4.11` release with both zips + sha256, Pages serving `registry/`, CI green — see [`done/INSP-001-bootstrap-public-distribution-repo.md`](done/INSP-001-bootstrap-public-distribution-repo.md) §0 |

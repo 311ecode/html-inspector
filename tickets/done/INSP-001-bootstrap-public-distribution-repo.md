@@ -1,6 +1,6 @@
 # INSP-001 — bootstrap the public distribution repo: import inspector + extension, release both zips from GitHub Releases
 
-**Project:** html-inspector · **Status:** NEW (planning — no code yet) · **Created:** 2026-11-19 ·
+**Project:** html-inspector · **Status:** DONE (landed 2026-11-19) · **Created:** 2026-11-19 ·
 **Origin:** extracted from `~/dev/menu-dashboard` — inspector `menu-inspector@0.4.11`, DASH-290a/b ·
 **Related:** `~/dev/menu-dashboard/tickets/` (DASH-596 "the served gate report carries the inspector FAB"),
 `scripts/publish-inspector.cjs`, `scripts/check-inspector-registry.cjs`, `lib/extension-artifact.js` ·
@@ -18,6 +18,33 @@ FAB and becomes a **consumer** of this repo (its own DASH ticket, §8).
 
 **"Now only":** no history migration. One import commit of the current tree. Registry versions
 `0.1.0 … 0.4.10` and the extension's `git rev-list` version counter stay behind in `menu-dashboard`.
+
+## 0. Landed — 2026-11-19
+
+| Fact | Value |
+|---|---|
+| Repo | https://github.com/311ecode/html-inspector (public, `main` = the release commit) |
+| Release | https://github.com/311ecode/html-inspector/releases/tag/inspector-v0.4.11 |
+| Extension asset | `html-inspector-0.1.23-86c7316.zip` — 45,132 B, `sha256:dc9bb26be35a8f1c99b2c26e899654735ae5da010714fde7088aaa72ace2cfb5` |
+| Embed asset | `html-inspector-embed-0.4.11.zip` — 33,204 B, `sha256:1d990617fe817a3ef22375da638e0749e58ce9ea654ebff64227fe80a7a898a2` |
+| Registry (Pages) | `https://311ecode.github.io/html-inspector/registry/index.json` (+ `inspector/v1/`) — served `inspector.js` sha256 identical to the committed file |
+| CI | `.github/workflows/ci.yml` — **verify-only** (never pushes/releases); green on `e68594d` (`verify` job: registry drift/immutable/determinism, vendor, protocol+artifact+site-bridge, binary guard, version-derivation guard; `ui` job: Playwright fixture suite) |
+| Consumer handoff | `menu-dashboard/tickets/new/DASH-600-rewire-served-fab-to-public-inspector-repo.md` (filed + pushed) |
+
+What actually landed vs this ticket's plan:
+
+- **No history migration** — two import commits, current tree only (`registry/` = 0.4.11 + `v1/`).
+- **Versions explicit** — `package.json` 0.4.11, `extension/manifest.json` 0.1.23; `lib/artifact.js` replaces
+  the dashboard's `lib/extension-artifact.js` (clean rewrite: deterministic zip only, no `app-watch`,
+  no git-history derivation).
+- **Release tag is `inspector-v<version>`** (the verifier's contract), not plain `v<version>`.
+- **`scripts/release.cjs`** implements the whole flow from this side (`--bump`, `--version`, `--dry-run`,
+  `--pages`); CI only verifies.
+- **Pages enabled** on `main` (serves the registry tree).
+- **Not ported (deferred, tracked as follow-ups):** the dashboard's `tests/unit/extension-artifact.test.js`
+  and `tests/unit/extension-site-bridge.test.js` in their dashboard shape — the site-bridge textual
+  guards WERE ported (`test/extension-site-bridge.test.js`), the artifact builder is covered by
+  `test/artifact.test.js`; the dashboard's own copy stays for its panel until DASH-600 prunes it.
 
 ## 1. Frozen decisions (user, 2026-11-19 — do not re-litigate)
 
@@ -122,7 +149,7 @@ Contract for the script (`node scripts/release.cjs [--version X.Y.Z] [--dry-run]
      `html-inspector-embed-0.4.11.zip`, 33,204 B, `inspector.js` + `inspector.css`)
    - one `.sha256` per zip. Zips must be **deterministic** (fixed mtimes/order; reuse the existing
      builder's `buildZip`/`buildHash`; verified: building twice gives identical bytes).
-5. **Commit + tag** — single commit of the version bump + regenerated registry; tag `v<version>`.
+5. **Commit + tag** — single commit of the version bump + regenerated registry; tag `inspector-v<version>`.
 6. **Push** — `git push origin main` and `git push origin v<version>` over SSH
    ([`../rules/git.md`](../../rules/git.md) bypass). No force-push.
 7. **Publish assets** — create the GitHub Release for the tag and upload both zips + hashes.
@@ -203,16 +230,15 @@ version before the dashboard's older `registry/` versions can stop being mirrore
 otherwise). Contract tests (`e2e-flipbook/tests/inspector_contract.rs` etc.) stay in the dashboard
 and keep asserting the served surface; only the mirror source changes.
 
-## 9. Open decisions (user picks before §5 lands)
+## 9. Decisions (settled 2026-11-19 by "let the repository fly")
 
-1. **Name** — `html-inspector` (recommended; product name ships as "HTML Inspector") vs
-   `menu-inspector` (npm name, internal) vs other.
-2. **License file** — keep `ISC` or switch (a real `LICENSE` is required for a public repo).
-3. **HTTP distribution host** — GitHub Pages serving `registry/` (recommended for
-   `<script src>`/`<link>` embed URLs; `raw.githubusercontent.com` is not a reliable script host) vs
-   registry served only through the dashboard mirror.
-4. **Embed zip contents** — `inspector.js` + `inspector.css` + `LICENSE` + `README` (recommended)
-   vs also a sample `index.html`.
+1. **Name** — `html-inspector` (repo); the npm-facing package stays `menu-inspector` (free on npm;
+   `html-inspector` there is taken). Rename only with a ticket.
+2. **License** — ISC, with a real `LICENSE` file; `package.json`/`inspector/package.json` agree.
+3. **HTTP distribution** — GitHub Pages serving the committed `registry/` (enabled; the embed URLs
+   are Pages URLs). The dashboard mirror keeps verifying via sha256 until DASH-600 switches it.
+4. **Embed zip contents** — `inspector.js` + `inspector.css` only (the two files a host vendors);
+   the README/quick-start carries the rest.
 
 ## 10. Acceptance criteria (all verifiable, run by the coordinator)
 
@@ -224,11 +250,11 @@ and keep asserting the served surface; only the mirror source changes.
 4. `git log --all --stat` contains **no** `.zip`/binary build artifact (`dist/` never committed).
 5. GitHub repo `311ecode/html-inspector` is public, `main` pushed (`git ls-remote origin` matches
    local `main`).
-6. Tag `v0.4.11` exists on the remote; its Release carries
+6. Tag `inspector-v0.4.11` exists on the remote; its Release carries
    `html-inspector-<extver>-<shortSha>.zip` (builder name, e.g. `html-inspector-0.1.22-e0c18ff.zip`)
    and `html-inspector-embed-0.4.11.zip` + `.sha256`; sizes and sha256s match a local rebuild
    (determinism) and match an unauthenticated download.
-7. `check-inspector-registry.cjs --release v0.4.11` → pass on that tag.
+7. `check-inspector-registry.cjs --release inspector-v0.4.11` → pass on that tag.
 8. `extension/manifest.json` version `0.1.23`; no `git rev-list --count` anywhere in the repo
    (`grep -rn 'rev-list' .` → empty).
 9. The dashboard handoff ticket (§8) exists in `menu-dashboard/tickets/new/`.
