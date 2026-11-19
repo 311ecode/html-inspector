@@ -93,11 +93,16 @@
 // Version 0.4.6 → 0.4.7; protocolVersion stays 3 (the HTML wire format is
 // byte-identical).
 (function() {
+    // INSP-007 — dev tools are OPT-IN, never public. The embedding <script>
+    // tag may carry data-html-inspector-dev="1"; capture it here because
+    // document.currentScript is only set during this synchronous execution.
+    var bootScript = document.currentScript;
+
     // DASH-290b §9 — self-contained HTML-wise: the host no longer places the
     // FAB markup (the old partial is gone). On first run the tool injects
     // the button + sheet at body level, reproducing the old partial
     // structurally and keeping every id/class verbatim (#fab, #fabBadge,
-    // #fabBackdrop, #fabSheet, #fabClose, #fabDevMode, #fabInspectRow,
+    // #fabBackdrop, #fabSheet, #fabSheetTitle, #fabIntro, #fabInspectRow,
     // #fabInspect, #fabAppendRow, #fabAppend, #fabPaste, #fabPasteFallback,
     // #fabPasteInput, #fabSnapshots, #fabSnapshotsCount, #fabCopyAll, and the
     // .fab-sheet-* / .insp-* classes — tests/e2e/inspector.spec.js is 33 tests
@@ -105,7 +110,7 @@
     // it: the injection is skipped when #fab already exists.
     function fabMarkup() {
         return `
-<button id="fab" class="fab" aria-label="Developer tools" aria-expanded="false" title="Developer tools — drag me onto a block to copy it">
+<button id="fab" class="fab" aria-label="HTML Inspector" aria-expanded="false" title="HTML Inspector — drag me onto a block to copy it">
     <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="2"/>
         <circle cx="12" cy="12" r="2" fill="currentColor"/>
@@ -114,21 +119,12 @@
     <span class="fab-badge" id="fabBadge" hidden></span>
 </button>
 <div id="fabBackdrop" class="fab-backdrop"></div>
-<aside id="fabSheet" class="fab-sheet" aria-label="Developer tools">
+<aside id="fabSheet" class="fab-sheet" aria-label="HTML Inspector">
     <div class="fab-sheet-header">
-        <span class="fab-sheet-title">Developer tools</span>
+        <span class="fab-sheet-title" id="fabSheetTitle">HTML Inspector</span>
         <button type="button" id="fabClose" class="fab-sheet-close" title="Close (Esc)" aria-label="Close">✕</button>
     </div>
-    <label class="fab-sheet-row" for="fabDevMode">
-        <span class="fab-sheet-row-text">
-            <span class="fab-sheet-row-label">Developer mode</span>
-            <span class="fab-sheet-row-hint">URL <code>?dev=1</code> · enables block inspection</span>
-        </span>
-        <span class="insp-switch">
-            <input type="checkbox" id="fabDevMode">
-            <span class="insp-slider"></span>
-        </span>
-    </label>
+    <div class="fab-sheet-intro" id="fabIntro">Drag the target icon onto a block — lift to copy its URL, path and HTML.</div>
     <label class="fab-sheet-row fab-sheet-row-inspect" id="fabInspectRow" for="fabInspect" hidden>
         <span class="fab-sheet-row-text">
             <span class="fab-sheet-row-label">Inspect &amp; copy HTML</span>
@@ -151,7 +147,7 @@
     </label>
     <div class="fab-sheet-divider"></div>
     <button type="button" id="fabPaste" class="fab-sheet-action">📋 Paste inspection</button>
-    <span class="fab-sheet-hint">reads the clipboard → finds the same element here → appends this dashboard's snapshot</span>
+    <span class="fab-sheet-hint">reads the clipboard → finds the same element here → appends this page's snapshot</span>
     <div class="fab-sheet-fallback" id="fabPasteFallback" hidden>
         <textarea id="fabPasteInput" rows="4" placeholder="Press &amp; hold → Paste anywhere on the page (or paste here)…"></textarea>
     </div>
@@ -175,7 +171,8 @@
     var sheet = document.getElementById('fabSheet');
     if (!fab || !backdrop || !sheet) return; // FAB absent — nothing to wire
 
-    var devSwitch = document.getElementById('fabDevMode');
+    var sheetTitle = document.getElementById('fabSheetTitle');
+    var intro = document.getElementById('fabIntro');
     var inspectRow = document.getElementById('fabInspectRow');
     var inspectSwitch = document.getElementById('fabInspect');
     var appendRow = document.getElementById('fabAppendRow');
@@ -225,8 +222,16 @@
     // keep body.fab-modal-open truthful (every opener toggles inline display).
     var MODAL_ROOTS = '.chart-modal, .chart-modal-overlay, .log-overlay';
 
+    // INSP-007 — dev tools are opt-in and independent of the host: the page URL
+    // (?dev=1), the <html> element or the embedding <script> can ask for them.
+    // There is no public switch any more: a visitor never flips the page into
+    // "developer mode", and nothing reloads the page.
     function devMode() {
-        return new URLSearchParams(location.search).get('dev') === '1';
+        if (new URLSearchParams(location.search).get('dev') === '1') return true;
+        var html = document.documentElement;
+        if (html && html.getAttribute('data-html-inspector-dev') === '1') return true;
+        if (bootScript && bootScript.getAttribute && bootScript.getAttribute('data-html-inspector-dev') === '1') return true;
+        return false;
     }
 
     // ── FAB sheet toggle ────────────────────────────────────────────────
@@ -238,18 +243,22 @@
         if (!open) pasteCaptureMode = false; // closing the sheet disarms paste-anywhere
     }
 
-    // ── DevMode = ?dev=1 (client-side only — no server change) ──────────
-    function applyDevMode(on) {
-        var params = new URLSearchParams(location.search);
-        if (on) params.set('dev', '1');
-        else params.delete('dev');
-        location.search = params.toString(); // reload; the param sticks, all others preserved
-    }
-
-    function syncDevModeSwitch() {
-        if (devSwitch) devSwitch.checked = devMode();
-        if (inspectRow) inspectRow.hidden = !devMode(); // Inspect row only when ?dev=1
-        if (appendRow) appendRow.hidden = !devMode();   // Append affects drag-copies only
+    // ── Dev tools are opt-in (INSP-007) ────────────────────────────────
+    // The default sheet is the distribution one: title "HTML Inspector", the
+    // drag hint, Paste inspection and the collected snapshots. The Inspect /
+    // Append switches only exist when the embedder opted in — that decision is
+    // theirs, not the visitor's, so there is no switch to flip.
+    function applyDevMode() {
+        var dev = devMode();
+        if (sheetTitle) sheetTitle.textContent = dev ? 'Developer tools' : 'HTML Inspector';
+        if (sheet) sheet.setAttribute('aria-label', dev ? 'Developer tools' : 'HTML Inspector');
+        if (fab) fab.setAttribute('aria-label', dev ? 'Developer tools' : 'HTML Inspector');
+        if (fab) fab.title = dev
+            ? 'Developer tools — drag me onto a block to copy it'
+            : 'HTML Inspector — drag me onto a block to copy it';
+        if (intro) intro.hidden = dev;
+        if (inspectRow) inspectRow.hidden = !dev; // Inspect switch: opt-in only
+        if (appendRow) appendRow.hidden = !dev;   // Append affects drag-copies only
     }
 
     // ── Hit-testing — deepest block-level element under the pointer ─────
@@ -1944,11 +1953,6 @@
     if (closeBtn) closeBtn.addEventListener('click', function() { setSheet(false); });
     if (backdrop) backdrop.addEventListener('click', function() { setSheet(false); });
 
-    if (devSwitch) {
-        devSwitch.addEventListener('change', function() {
-            applyDevMode(devSwitch.checked); // reloads with/without ?dev=1
-        });
-    }
     if (inspectSwitch) {
         inspectSwitch.addEventListener('change', function() {
             if (inspectSwitch.checked) setSheet(false); // clear the drag surface
@@ -2059,10 +2063,10 @@
     }
     syncModalState(); // modals start closed — class off (idempotent)
 
-    syncDevModeSwitch();
+    applyDevMode();
     renderSnapshots(); // FAB badge starts hidden
     // bfcache restore may land on a different URL (back/forward) — re-read ?dev=1.
-    window.addEventListener('pageshow', syncDevModeSwitch);
+    window.addEventListener('pageshow', applyDevMode);
 
     // ── DASH-466/478 — host mode: the extension's picker is the target icon ─
     // The extension marks <html data-html-inspector-host="extension"> with a

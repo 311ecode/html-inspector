@@ -244,6 +244,17 @@ $green:     #22c55e;
   padding: 0 4px 6px;
 }
 
+// INSP-007 — the distribution sheet's one instructional line (the drag gesture
+// is the product; the developer switches below it are opt-in only).
+.fab-sheet-intro {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: $muted;
+  padding: 2px 4px 10px;
+
+  &[hidden] { display: none; }
+}
+
 .fab-sheet-fallback {
   display: flex;
   flex-direction: column;

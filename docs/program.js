@@ -71,7 +71,7 @@ module.exports = {
             beats: [
                 { scene: 'embed', shot: 'drag', caption: 'Drag the FAB onto a block: the deepest block-level element lights up with a breadcrumb.' },
                 { scene: 'embed', shot: 'copied', caption: 'Lift: the payload is on the clipboard (URL, path and outerHTML were just copied).' },
-                { scene: 'embed', shot: 'sheet', caption: 'Tap instead of drag to open the sheet: collected snapshots and the inspection switches.' },
+                { scene: 'embed', shot: 'sheet', caption: 'Tap instead of drag: the distribution sheet carries the drag hint, Paste inspection and your collected snapshots.' },
                 { scene: 'embed', shot: 'mobile', caption: 'The same embed on a 390 px phone — the FAB is always visible and safe-area aware.' },
             ],
         },
@@ -134,6 +134,28 @@ module.exports = {
             ],
             code: [],
             beats: [],
+        },
+        {
+            id: 'devtools',
+            heading: 'Developer tools are opt-in',
+            body: [
+                'The default sheet is the distribution one: a drag hint, **Paste inspection** and the',
+                'snapshots you have collected. The Inspect and Append switches are a *site owner\'s*',
+                'decision, not a visitor\'s, so they only exist when the page asks for them:',
+                '',
+                '- `?dev=1` in the URL (internal pages, deep links), or',
+                '- `data-html-inspector-dev="1"` on the `<html>` element or on the embedding `<script>` tag.',
+                '',
+                'Nothing reloads the page, nothing rewrites the URL, and there is no switch a visitor',
+                'could flip — the capability stays in the bundle, the public sheet never shows it.',
+            ],
+            code: [
+                '<script defer src="…/registry/inspector/v1/inspector.js"',
+                '        data-html-inspector-dev="1"></script>',
+            ],
+            beats: [
+                { scene: 'embed', shot: 'devsheet', caption: 'Opted in: the same tap opens the full Developer tools sheet with the Inspect and Append switches.' },
+            ],
         },
         {
             id: 'extension',

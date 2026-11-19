@@ -124,3 +124,32 @@ test('the sandbox page boots the FAB and shows the copied payload back', async (
     // the pick is the deepest block-level element (the card's paragraph)
     expect(text.split('\n')[1]).toContain('article#sandbox-card-b');
 });
+
+test('the default sheet is the distribution one — no developer switches, no reload', async ({ page, context }) => {
+    const errors = await openEmbed(page, context);
+    await page.locator('#fab').click();
+    await expect(page.locator('#fabSheet')).toHaveClass(/open/);
+    await expect(page.locator('#fabSheetTitle')).toHaveText('HTML Inspector');
+    await expect(page.locator('#fabIntro')).toBeVisible();
+    await expect(page.locator('#fabPaste')).toBeVisible();
+    await expect(page.locator('#fabInspectRow')).toBeHidden();
+    await expect(page.locator('#fabAppendRow')).toBeHidden();
+    await expect(page.locator('#fabDevMode')).toHaveCount(0); // no public switch exists
+    expect(errors).toEqual([]);
+    await expect(page).toHaveURL(srv.base + '/embed'); // the sheet never navigates
+});
+
+test('?dev=1 opts into the developer sheet without a switch or a reload', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: srv.base });
+    await page.goto(srv.base + '/embed?dev=1');
+    await expect(page.locator('#fab')).toBeVisible();
+    const before = page.url();
+
+    await page.locator('#fab').click();
+    await expect(page.locator('#fabSheetTitle')).toHaveText('Developer tools');
+    await expect(page.locator('#fabInspectRow')).toBeVisible();
+    await expect(page.locator('#fabAppendRow')).toBeVisible();
+    await expect(page.locator('#fabIntro')).toBeHidden();
+    await expect(page.locator('#fabDevMode')).toHaveCount(0);
+    expect(page.url()).toBe(before); // opt-in is resolved at boot; nothing navigates
+});

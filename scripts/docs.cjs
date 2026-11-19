@@ -135,6 +135,20 @@ function embedScene(srv) {
                 await page.screenshot({ path: file, type: 'jpeg', quality: 82 });
                 return { payload };
             }
+            if (name === 'devsheet') {
+                // INSP-007 — the same sheet after the embedder opted in.
+                await context.close();
+                await freshPage('/embed?dev=1');
+                await page.locator('#fab').click();
+                await page.waitForFunction(() => {
+                    const t = document.getElementById('fabSheetTitle');
+                    const s = document.getElementById('fabSheet');
+                    return !!t && t.textContent === 'Developer tools' && !!s && s.classList.contains('open');
+                });
+                await page.waitForTimeout(350);
+                await page.screenshot({ path: file, type: 'jpeg', quality: 82 });
+                return {};
+            }
             if (name === 'sheet') {
                 // reset to a clean page so the sheet opens from the idle FAB
                 await context.close();
