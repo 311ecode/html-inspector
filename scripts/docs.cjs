@@ -242,12 +242,26 @@ function codeBlock(lines) {
     return `<pre class="cmd"><code>${esc(lines.join('\n'))}</code></pre>`;
 }
 
+/** Colourize one clipboard payload for display (escaped; raw text unchanged). */
+function highlightPayload(text) {
+    return String(text).split('\n').map((line) => {
+        const key = /^(URL|Path|Context|Captured|Evidence|HTML):\s?(.*)$/.exec(line);
+        if (key) {
+            const rest = key[2] === '' ? '' : ' ' + esc(key[2]);
+            return `<span class="pk pk-${key[1].toLowerCase()}">${key[1]}:</span>${rest}`;
+        }
+        const fact = /^(\s{2})([A-Za-z0-9_.-]+):\s?(.*)$/.exec(line);
+        if (fact) return `${fact[1]}<span class="pfk">${esc(fact[2])}:</span> <span class="pfv">${esc(fact[3])}</span>`;
+        return `<span class="ph">${esc(line)}</span>`;
+    }).join('\n');
+}
+
 function frameFigure(n, beat, imgRel, payload) {
     return `<figure class="beat">
       <img src="${esc(imgRel)}" alt="${esc(beat.caption)}" loading="lazy" class="zoomable" tabindex="0" role="button" aria-label="Enlarge frame ${n}: ${esc(beat.caption)}">
       <span class="zoom-hint" aria-hidden="true">⤢</span>
       <figcaption><span class="num">${n}</span>${inline(beat.caption)}</figcaption>
-      ${payload ? `<pre class="clip"><code>${esc(payload)}</code></pre>` : ''}
+      ${payload ? `<pre class="clip"><code>${highlightPayload(payload)}</code></pre>` : ''}
     </figure>`;
 }
 
@@ -291,7 +305,18 @@ function render(sections, opts) {
   code { font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; background:#1f242c; border:1px solid var(--line); border-radius:6px; padding:1px 5px; }
   pre.cmd, pre.clip { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 18px; overflow:auto; }
   pre.cmd code, pre.clip code { background:none; border:0; padding:0; }
-  pre.clip { margin:12px 0 0; border-left:3px solid var(--accent); }
+  pre.clip { margin:12px 0 0; border:1px solid #3d444d; border-left:4px solid #a371f7; border-radius:12px;
+    background:linear-gradient(135deg,rgba(255,123,114,.10),rgba(242,204,96,.07),rgba(63,185,80,.07),rgba(88,166,255,.10),rgba(163,113,247,.13));
+    box-shadow:0 0 0 1px rgba(163,113,247,.14), 0 12px 34px -20px rgba(88,166,255,.55); }
+  pre.clip code { font-size:14.5px; line-height:1.62; }
+  .pk { font-weight:700; }
+  .pk-url { color:#58a6ff; } .pk-path { color:#d2a8ff; } .pk-context { color:#3fb950; }
+  .pk-captured { color:#ffa657; } .pk-evidence { color:#f2cc60; } .pk-html { color:#ff7b72; }
+  .pfk { color:#79c0ff; font-weight:600; } .pfv { color:#a5d6ff; } .ph { color:#ffa657; }
+  .try { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:18px 0 0; padding:12px 16px;
+    border-radius:12px; border:1px solid var(--line);
+    background:linear-gradient(90deg,rgba(255,166,87,.10),rgba(242,204,96,.08),rgba(63,185,80,.07),rgba(88,166,255,.10)); }
+  .try a { font-weight:600; }
   pre.clip::before { content:"clipboard payload, copied live"; display:block; font:11px/1.4 ui-monospace,monospace; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
   .strip { display:grid; grid-template-columns:repeat(auto-fit,minmax(440px,1fr)); gap:20px; margin:22px 0 8px; }
   figure.beat { position:relative; margin:0; background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
@@ -327,6 +352,7 @@ function render(sections, opts) {
     <span class="badge"><a href="https://311ecode.github.io/html-inspector/registry/index.json">registry index</a></span>
     <span class="badge"><a href="https://github.com/311ecode/html-inspector">source</a></span>
   </div>
+  <p class="try">▶ <a href="sandbox.html">Try it live in the sandbox</a> — a customer-like page that loads the two embed lines and lets you pick a block for real.</p>
 </header>
 ${body}
 <footer>${inline(program.footer)}<br>Generated from commit <code>${esc(sha)}</code>.</footer>

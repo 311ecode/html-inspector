@@ -69,6 +69,12 @@ function startServer(opts) {
             res.end(html);
             return;
         }
+        if (pathname === '/sandbox' || pathname === '/sandbox/') {
+            // relative ../registry/... resolves to /registry/... from this route
+            res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+            res.end(fs.readFileSync(path.join(ROOT, 'docs', 'sandbox.html')));
+            return;
+        }
         if (pathname.startsWith('/registry/')) {
             sendFile(res, path.join(ROOT, pathname.replace(/^\/+/, '')));
             return;

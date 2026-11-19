@@ -105,3 +105,22 @@ test('a page can enrich the copied payload with context + evidence metadata', as
     expect(payload.split('\n')[1]).toContain('p#meta-copy');
     expect(errors).toEqual([]);
 });
+
+test('the sandbox page boots the FAB and shows the copied payload back', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: srv.base });
+    await page.goto(srv.base + '/sandbox');
+    await expect(page.locator('#fab')).toBeVisible();
+
+    const block = page.locator('#sandbox-card-b');
+    const box = await block.boundingBox();
+    await dragFabTo(page, box.x + box.width / 2, box.y + box.height / 2);
+    await expect(page.locator('.inspector-overlay')).toBeVisible();
+
+    await page.locator('#read').click();
+    await expect.poll(() => page.locator('#out').inputValue()).toContain('URL:');
+    const text = await page.locator('#out').inputValue();
+    expect(text).toContain('Path: ');
+    expect(text).toContain('HTML:');
+    // the pick is the deepest block-level element (the card's paragraph)
+    expect(text.split('\n')[1]).toContain('article#sandbox-card-b');
+});

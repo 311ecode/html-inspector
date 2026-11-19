@@ -18,6 +18,8 @@ The live, generated product page (what it is · who it is for · embed snippet �
 extension install · real screenshots captured from a browser run):
 
 - **https://311ecode.github.io/html-inspector/docs/** — regenerate with `npm run docs`
+- **https://311ecode.github.io/html-inspector/docs/sandbox.html** — the try-it page: press the
+  FAB on a customer-like page and read the payload back
 
 ## Quick start
 
