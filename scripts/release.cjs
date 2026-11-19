@@ -22,10 +22,16 @@
 // Usage:
 //   GITHUB_TEST_TOKEN=$(cat /tmp/env/GITHUB_TEST_TOKEN) node scripts/release.cjs --dry-run
 //   GITHUB_TEST_TOKEN=... node scripts/release.cjs            # release current version
+//   GITHUB_TEST_TOKEN=... node scripts/release.cjs --bump      # 0.4.11 → 0.4.12, ext patch +1
 //   GITHUB_TEST_TOKEN=... node scripts/release.cjs --version 0.4.12
 //   GITHUB_TEST_TOKEN=... node scripts/release.cjs --pages    # also enable Pages
 //
-// Flags: --version X.Y.Z · --dry-run · --skip-tests · --pages
+// Flags: --bump · --version X.Y.Z · --dry-run · --skip-tests · --pages
+//
+// Version rule (explicit, never derived): --bump increments the package
+// (inspector) patch AND the extension manifest patch; --version sets the
+// package version and leaves the extension manifest alone. Both are stamped
+// from committed files, so a release is reproducible from the tag.
 // Token: read from GITHUB_TEST_TOKEN or GH_TOKEN (never argv). The fine-grained
 // drop-ins cannot create repos; this script does not create repos either — the
 // repo exists already, it only pushes + uploads.
@@ -47,6 +53,7 @@ const SSH_BYPASS = 'SSH_AUTH_SOCK= ssh -F /dev/null -i ' + path.join(process.env
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const skipTests = args.includes('--skip-tests');
+const bump = args.includes('--bump');
 const enablePages = args.includes('--pages');
 const versionArg = (() => {
     const i = args.indexOf('--version');
@@ -55,7 +62,7 @@ const versionArg = (() => {
     if (!v) die('--version needs a value');
     return v;
 })();
-const unknown = args.filter((a) => !['--dry-run', '--skip-tests', '--pages', '--version'].includes(a) && !/^\d+\.\d+\.\d+$/.test(a));
+const unknown = args.filter((a) => !['--dry-run', '--skip-tests', '--pages', '--version', '--bump'].includes(a) && !/^\d+\.\d+\.\d+$/.test(a));
 if (unknown.length) die(`unknown argument(s): ${unknown.join(' ')}`);
 
 function die(msg) {
@@ -124,6 +131,25 @@ function setVersion(version) {
 
 function currentVersion() {
     return readJson(path.join(ROOT, 'package.json')).version;
+}
+
+function nextPatch(version) {
+    const m = /^(\d+)\.(\d+)\.(\d+)$/.exec(String(version));
+    if (!m) die(`bad version ${JSON.stringify(version)}`);
+    return `${m[1]}.${m[2]}.${Number(m[3]) + 1}`;
+}
+
+/** --bump: package (inspector) patch + extension manifest patch, both explicit. */
+function bumpVersions() {
+    const next = nextPatch(currentVersion());
+    setVersion(next);
+    const extPath = path.join(ROOT, 'extension', 'manifest.json');
+    const ext = readJson(extPath);
+    const extNext = nextPatch(ext.version);
+    ext.version = extNext;
+    writeJson(extPath, ext);
+    ok(`extension/manifest.json version ${ext.version} -> ${extNext}`);
+    return next;
 }
 
 // ── 2. regenerate generated files ──────────────────────────────────────
@@ -294,8 +320,9 @@ async function pages() {
 
 (async () => {
     preflight();
-    const version = versionArg || currentVersion();
+    if (versionArg && bump) die('use either --version or --bump, not both');
     if (versionArg && versionArg !== currentVersion()) setVersion(versionArg);
+    const version = bump ? bumpVersions() : (versionArg || currentVersion());
     log(`releasing html-inspector ${version} (tag inspector-v${version})${dryRun ? ' [dry-run]' : ''}`);
     regenerate();
     gates();
