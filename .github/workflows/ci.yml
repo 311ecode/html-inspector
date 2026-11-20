@@ -1,6 +1,6 @@
 # Verify-only CI. This workflow NEVER pushes git refs and NEVER creates or
 # uploads a GitHub Release: releases are cut from the maintainer's machine with
-# `node scripts/release.cjs` (see AGENTS.md / ../rules/git.md). CI's job is to
+# from the menu-dashboard sidecar (see AGENTS.md). CI's job is to
 # prove the committed tree, the generated registry and the vendored extension
 # bundle are consistent — anything that writes git history fails review.
 name: verify

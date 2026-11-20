@@ -98,40 +98,22 @@ node scripts/check-inspector-registry.cjs --immutable --determinism
 node extension/tools/sync-vendor.mjs --check
 ```
 
-## Release — from this side only
+## Release — owner-run from the menu-dashboard sidecar
 
-```bash
-# token: the classic PAT (repo scope) in the shell state; never commit it
-GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs            # current version
-GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs --bump     # +1 inspector & extension patch
-GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs --dry-run  # build only
-GITHUB_TEST_TOKEN=<classic PAT> node scripts/release.cjs --pages    # also (re)enable Pages
-```
+The mirror does not carry its own release scripts (INSP-012). Release is driven from
+`~/dev/menu-dashboard/inspector-release.d/`, against this checkout
+(`HTML_INSPECTOR_SYNC_TARGET`, default `~/dev/html-inspector`):
 
-Asset names are clean and versioned (`html-inspector-extension-<version>.zip`,
-`html-inspector-embed-<version>.zip` + `.sha256` siblings); the release notes are
-generated from the actual built files (sizes + sha256 + embed snippet + install
-steps), never placeholders.
-The script regenerates the registry, runs every gate, builds both zips into
-`dist/` (gitignored), commits the version bump, tags `inspector-v<version>`,
-pushes `main` + tag over SSH, creates the Release, uploads the zips (skipping an
-identical asset, refusing to overwrite a different one) and verifies via the API.
-**CI never pushes and never releases** — `.github/workflows/ci.yml` only verifies.
+1. bump the version in **menu-dashboard** (`package.json`, `inspector/package.json`,
+   `extension/manifest.json`), regenerate its registry, commit;
+2. `./inspector-github-sync.d/publish_inspector.sh` — mirror the product here, byte-for-byte;
+3. `node inspector-release.d/release_inspector.cjs` — regenerate docs/registry, build both
+   zips, tag `inspector-v<version>`, push, create the GitHub Release, verify
+   (`--dry-run`, `--skip-tests`, `--pages` supported).
 
-## npm release — owner-run, manual (INSP-011)
+npm is the same shape: `node inspector-release.d/release_inspector_npm.cjs` (after
+`npm login`) publishes this mirror's current version as `menu-inspector`.
 
-The npm package is `menu-inspector`, built from `registry/inspector/<version>/` (the
-version-stamped bundle + compiled stylesheet), not from `inspector/src`.
-
-```bash
-npm login                  # owner only; the npm session/token stays in ~/.npmrc
-npm run release:npm:dry    # stage .npm-stage/ + npm pack preview (no auth required)
-npm run release:npm        # preflight → stage → pack → auth gate → typed confirm → publish → verify
-```
-
-The agent has **no npm credentials** (`npm whoami` → 401) and must not attempt the publish
-step: the script refuses at the auth gate and prints the `npm login` instruction. It never
-reads, stores or prints a token. CI never publishes to npm.
 
 Registry serving (GitHub Pages, enabled 2026-11-19):
 

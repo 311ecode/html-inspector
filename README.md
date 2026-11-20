@@ -49,15 +49,13 @@ Version, layout and the release flow contracts live in the project
 
 ## npm
 
-The package publishes as **`menu-inspector`** (the repo name is taken on npm). Owner-run only:
+The package publishes as **`menu-inspector`** — owner-run from the dashboard sidecar:
 
 ```bash
-npm login && npm run release:npm   # preflight + publish the current version
-npm run release:npm:dry            # stage + pack preview without auth
+# after a version bump + sync
+node ~/dev/menu-dashboard/inspector-release.d/release_inspector_npm.cjs --dry-run
+node ~/dev/menu-dashboard/inspector-release.d/release_inspector_npm.cjs   # needs npm login
 ```
-
-The tarball carries the version-stamped `inspector.js` + `inspector.css`, so it can be used
-from a CDN (`https://cdn.jsdelivr.net/npm/menu-inspector@<version>/inspector.js`).
 
 ## Tests
 

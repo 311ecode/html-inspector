@@ -20,12 +20,9 @@
     "registry:check": "node scripts/publish-inspector.cjs",
     "registry:write": "node scripts/publish-inspector.cjs --write",
     "sync:vendor": "node extension/tools/sync-vendor.mjs",
-    "release": "node scripts/release.cjs",
     "test:e2e": "playwright test --project=e2e",
     "test:e2e:live": "HTML_INSPECTOR_LIVE=1 playwright test --project=e2e",
-    "docs": "node scripts/docs.cjs",
-    "release:npm": "node scripts/release-npm.cjs",
-    "release:npm:dry": "node scripts/release-npm.cjs --dry-run"
+    "docs": "node scripts/docs.cjs"
   },
   "devDependencies": {
     "playwright": "^1.61.0",
