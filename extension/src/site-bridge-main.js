@@ -151,7 +151,13 @@
                     canvas.height = plan.srcH;
                     var ctx = canvas.getContext('2d');
                     if (!ctx) throw new Error('canvas is unavailable');
-                    ctx.drawImage(bitmap, -plan.srcX, -plan.srcY);
+                    var scaleX = bitmap.width > 0 && window.innerWidth > 0 ? bitmap.width / window.innerWidth : dpr;
+                    var scaleY = bitmap.height > 0 && window.innerHeight > 0 ? bitmap.height / window.innerHeight : scaleX;
+                    var bx = Math.round(plan.srcX * (scaleX / dpr));
+                    var by = Math.round(plan.srcY * (scaleY / dpr));
+                    var bw = Math.max(1, Math.round(plan.srcW * (scaleX / dpr)));
+                    var bh = Math.max(1, Math.round(plan.srcH * (scaleY / dpr)));
+                    ctx.drawImage(bitmap, bx, by, bw, bh, 0, 0, plan.srcW, plan.srcH);
                     return canvasToPng(canvas);
                 } finally {
                     if (bitmap.close) bitmap.close();

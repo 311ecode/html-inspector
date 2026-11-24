@@ -63,6 +63,18 @@ async function serveFixture() {
       // fixture's own <script> boots the published bundle.
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
       res.end(html);
+    } else if (pathname === '/green-box') {
+      // Pixel-exact capture fixture: pure blue page (#0000ff) with a fixed
+      // 200×120 pure green box (#00ff00), no text/border/radius. Any uncropped
+      // margin shows up as blue, and any inspector overlay/pill shows up as
+      // tinted/white/dark pixels.
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(
+        '<!doctype html><html><head><meta charset="utf-8"><style>' +
+        'html,body{margin:0;padding:0;width:100%;height:100%;background:#0000ff;overflow:hidden;}' +
+        '#green-box{position:fixed;left:180px;top:140px;width:200px;height:120px;background:#00ff00;}' +
+        '</style></head><body><div id="green-box"></div></body></html>'
+      );
     } else if (pathname === '/inspector.css') {
       res.writeHead(200, { 'content-type': 'text/css; charset=utf-8' });
       res.end(css);
@@ -481,6 +493,151 @@ test('DASH-473 site mode: CropTarget + track.cropTo crops via Region Capture; th
   }
 });
 
+test('display tier: Region Capture falls back to manual crop when track.cropTo resolves on a full-viewport frame, and hides inspector chrome during capture', async () => {
+  const { server, base } = await serveFixture();
+  let browser;
+  let context;
+  try {
+    browser = await chromium.launch({ headless: true });
+    context = await browser.newContext({ viewport: { width: 900, height: 700 }, deviceScaleFactor: 2 });
+    const page = await context.newPage();
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
+    await page.addInitScript(() => {
+      window.__chromeDuringCrop = null;
+      const dpr = window.devicePixelRatio || 1;
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(window.innerWidth * dpr);
+      canvas.height = Math.round(window.innerHeight * dpr);
+      const ctx = canvas.getContext('2d');
+      let n = 0;
+      (function paint() {
+        ctx.fillStyle = n++ % 2 ? '#1d4ed8' : '#f97316';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        requestAnimationFrame(paint);
+      })();
+      const stream = canvas.captureStream(30);
+      window.__tracks = stream.getTracks();
+      navigator.mediaDevices.getDisplayMedia = async () => stream;
+      window.CropTarget = {
+        fromElement: async () => ({ region: true }),
+      };
+      // Simulate Chromium resolving cropTo() while <video> still delivers a
+      // full-viewport frame — and snapshot inspector chrome visibility at the
+      // moment capture runs.
+      Object.defineProperty(MediaStreamTrack.prototype, 'cropTo', {
+        configurable: true,
+        writable: true,
+        value: async function () {
+          const vis = (sel) => {
+            const node = document.querySelector(sel);
+            return node ? getComputedStyle(node).display : 'missing';
+          };
+          const toast = document.querySelector('.inspector-toast');
+          window.__chromeDuringCrop = {
+            overlay: vis('.inspector-overlay'),
+            tag: vis('.inspector-tag'),
+            dismiss: vis('.inspector-x'),
+            camera: vis('.inspector-camera'),
+            download: vis('.inspector-download'),
+            text: vis('.inspector-text'),
+            md: vis('.inspector-md'),
+            fab: vis('#fab'),
+            toastVisibility: toast ? getComputedStyle(toast).visibility : 'missing',
+          };
+        },
+      });
+    });
+    await page.goto(base + '/site');
+    await expect(page.locator('#fab')).toHaveCount(1);
+
+    const box = await dragFabToProbe(page);
+    await expect(page.locator('.inspector-camera')).toBeVisible();
+    await page.locator('.inspector-camera').click();
+    await expect(page.locator('.inspector-toast')).toContainText('📸 Copied image');
+
+    // Must be cropped to the element, NEVER the full 1800×1400 viewport.
+    const dpr = await page.evaluate(() => window.devicePixelRatio);
+    expectElementPng(await readClipboardImage(page), box, dpr);
+
+    // Every inspector chrome element was hidden while capturing.
+    expect(await page.evaluate(() => window.__chromeDuringCrop)).toEqual({
+      overlay: 'none',
+      tag: 'none',
+      dismiss: 'none',
+      camera: 'none',
+      download: 'none',
+      text: 'none',
+      md: 'none',
+      fab: 'none',
+      toastVisibility: 'hidden',
+    });
+
+    // Chrome is restored after capture.
+    await expect(page.locator('.inspector-overlay')).toBeVisible();
+    await expect(page.locator('.inspector-camera')).toBeVisible();
+    await expect(page.locator('#fab')).toBeVisible();
+    expect(await page.evaluate(() => window.__tracks.every((t) => t.readyState === 'ended'))).toBe(true);
+  } finally {
+    if (context) await context.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
+test('bridge tier: hides inspector chrome before invoking the bridge and restores it afterward', async () => {
+  const { server, base } = await serveFixture();
+  let browser;
+  let context;
+  try {
+    browser = await chromium.launch({ headless: true });
+    context = await browser.newContext();
+    const page = await context.newPage();
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
+    await page.addInitScript(() => {
+      window.__chromeDuringBridge = null;
+      window.__htmlInspectorCapture = function () {
+        const vis = (sel) => {
+          const node = document.querySelector(sel);
+          return node ? getComputedStyle(node).display : 'missing';
+        };
+        window.__chromeDuringBridge = {
+          overlay: vis('.inspector-overlay'),
+          tag: vis('.inspector-tag'),
+          dismiss: vis('.inspector-x'),
+          camera: vis('.inspector-camera'),
+          download: vis('.inspector-download'),
+          text: vis('.inspector-text'),
+          md: vis('.inspector-md'),
+          fab: vis('#fab'),
+        };
+        return Promise.resolve('data:image/png;base64,AAAA');
+      };
+    });
+    await page.goto(base + '/site');
+    await dragFabToProbe(page);
+    await page.locator('.inspector-camera').click();
+    await expect(page.locator('.inspector-toast')).toContainText('📸 Copied image');
+
+    expect(await page.evaluate(() => window.__chromeDuringBridge)).toEqual({
+      overlay: 'none',
+      tag: 'none',
+      dismiss: 'none',
+      camera: 'none',
+      download: 'none',
+      text: 'none',
+      md: 'none',
+      fab: 'none',
+    });
+    await expect(page.locator('.inspector-overlay')).toBeVisible();
+    await expect(page.locator('.inspector-camera')).toBeVisible();
+    await expect(page.locator('#fab')).toBeVisible();
+  } finally {
+    if (context) await context.close().catch(() => {});
+    if (browser) await browser.close().catch(() => {});
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
+
 test('DASH-473 site mode: a cancelled share picker (NotAllowedError / AbortError) toasts "Screen capture cancelled", stays settled and downloads nothing', async () => {
   const { server, base } = await serveFixture();
   let browser;
@@ -651,7 +808,17 @@ test('DASH-469 extension e2e: 📷 sends the pick to the worker, crops it and pu
         if (item.types.includes('image/png')) {
           const blob = await item.getType('image/png');
           const bmp = await createImageBitmap(blob);
-          return { type: blob.type, width: bmp.width, height: bmp.height };
+          const canvas = document.createElement('canvas');
+          canvas.width = bmp.width;
+          canvas.height = bmp.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(bmp, 0, 0);
+          // Sample a background pixel on the right side of #probe (no text
+          // there) to prove the green .inspector-overlay was hidden during
+          // captureVisibleTab (#eef2ff = 238,242,255; green tint would drop R
+          // to ~187 and B to ~215).
+          const px = ctx.getImageData(Math.max(0, bmp.width - 20), Math.floor(bmp.height / 2), 1, 1).data;
+          return { type: blob.type, width: bmp.width, height: bmp.height, rgba: [px[0], px[1], px[2], px[3]] };
         }
       }
       return null;
@@ -662,6 +829,10 @@ test('DASH-469 extension e2e: 📷 sends the pick to the worker, crops it and pu
     // AC 5 — decoded dimensions are the element's CSS size × DPR, ±1 px.
     expect(Math.abs(image.width - Math.round(box.width * dpr))).toBeLessThanOrEqual(1);
     expect(Math.abs(image.height - Math.round(box.height * dpr))).toBeLessThanOrEqual(1);
+    // Inspector overlay must NOT be painted into the screenshot (#eef2ff = 238,242,255).
+    expect(Math.abs(image.rgba[0] - 238), `red channel (${image.rgba}) should match #eef2ff, not green overlay`).toBeLessThanOrEqual(8);
+    expect(Math.abs(image.rgba[1] - 242), `green channel (${image.rgba}) should match #eef2ff, not green overlay`).toBeLessThanOrEqual(8);
+    expect(Math.abs(image.rgba[2] - 255), `blue channel (${image.rgba}) should match #eef2ff, not green overlay`).toBeLessThanOrEqual(8);
 
     // A successful image copy STAYS settled; Esc is the exit (DASH-478 — the
     // settled ✕ clears the highlight only, like the in-site tool).
@@ -789,6 +960,166 @@ test('DASH-471 extension e2e: site mode — isolated relay + MAIN-world shim don
     await expect(page.locator('.inspector-camera')).toBeHidden();
     // The page's FAB was never re-injected or removed by the extension.
     await expect(page.locator('#fab')).toHaveCount(1);
+  } finally {
+    if (context) await context.close().catch(() => {});
+    await new Promise((resolve) => server.close(resolve));
+    fs.rmSync(extDir, { recursive: true, force: true });
+    fs.rmSync(profileDir, { recursive: true, force: true });
+  }
+});
+
+test('pixel-by-pixel extension e2e: 200×120 pure green box on blue page captures exact size and 100% pure green pixels (no overlay, no page leak)', async () => {
+  test.setTimeout(60000);
+  const extDir = stageExtension();
+  const profileDir = fs.mkdtempSync(path.join(os.tmpdir(), 'greenbox-profile-'));
+  const { server, base } = await serveFixture();
+
+  let context;
+  try {
+    try {
+      context = await chromium.launchPersistentContext(profileDir, {
+        channel: 'chromium',
+        headless: true,
+        args: [
+          '--headless=new',
+          `--disable-extensions-except=${extDir}`,
+          `--load-extension=${extDir}`,
+        ],
+        viewport: { width: 900, height: 700 },
+        deviceScaleFactor: 1,
+      });
+    } catch (err) {
+      test.skip(true, 'this browser cannot load an unpacked extension: ' + err.message);
+      return;
+    }
+
+    let worker = context.serviceWorkers()[0];
+    if (!worker) {
+      try {
+        worker = await context.waitForEvent('serviceworker', { timeout: 10000 });
+      } catch (err) {
+        test.skip(true, 'the unpacked extension did not start a service worker: ' + err.message);
+        return;
+      }
+    }
+
+    const page = context.pages()[0] || await context.newPage();
+    await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
+    await page.goto(base + '/green-box');
+    await page.bringToFront();
+
+    await worker.evaluate(async () => {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const tabId = tabs[0].id;
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => document.documentElement.setAttribute('data-html-inspector-host', 'extension'),
+      });
+      await chrome.scripting.executeScript({ target: { tabId }, files: ['src/bridge.js'] });
+      await chrome.scripting.insertCSS({ target: { tabId }, files: ['vendor/inspector.css'] });
+      await chrome.scripting.executeScript({ target: { tabId }, files: ['vendor/inspector.js'] });
+    });
+
+    await expect(page.locator('#fab')).toBeVisible();
+
+    // Drag FAB onto the 200×120 #green-box.
+    const box = await page.locator('#green-box').boundingBox();
+    expect(box).toEqual({ x: 180, y: 140, width: 200, height: 120 });
+    const fabBox = await page.locator('#fab').boundingBox();
+    await page.mouse.move(fabBox.x + fabBox.width / 2, fabBox.y + fabBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(fabBox.x - 100, fabBox.y, { steps: 5 });
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 10 });
+    await page.mouse.up();
+    await expect(page.locator('.inspector-overlay')).toBeVisible();
+    await expect(page.locator('.inspector-camera')).toBeVisible();
+
+    // 1. Copy as image (📷) → verify exact 200×120 and every single pixel is #00ff00.
+    await page.locator('.inspector-camera').click();
+    await expect(page.locator('.inspector-toast')).toContainText('📸 Copied image');
+
+    const report = await page.evaluate(async () => {
+      const items = await navigator.clipboard.read();
+      let blob = null;
+      for (const item of items) {
+        if (item.types.includes('image/png')) {
+          blob = await item.getType('image/png');
+          break;
+        }
+      }
+      if (!blob) return null;
+      const bmp = await createImageBitmap(blob);
+      const canvas = document.createElement('canvas');
+      canvas.width = bmp.width;
+      canvas.height = bmp.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bmp, 0, 0);
+      const data = ctx.getImageData(0, 0, bmp.width, bmp.height).data;
+      const total = bmp.width * bmp.height;
+      let bad = 0;
+      let firstBad = null;
+      let sumR = 0, sumG = 0, sumB = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+        sumR += r; sumG += g; sumB += b;
+        if (r > 2 || g < 253 || b > 2 || a !== 255) {
+          bad++;
+          if (!firstBad) {
+            const p = i / 4;
+            firstBad = { x: p % bmp.width, y: Math.floor(p / bmp.width), rgba: [r, g, b, a] };
+          }
+        }
+      }
+      return {
+        width: bmp.width,
+        height: bmp.height,
+        total,
+        bad,
+        firstBad,
+        avg: [sumR / total, sumG / total, sumB / total],
+      };
+    });
+
+    expect(report, 'clipboard holds an image/png').not.toBeNull();
+    expect(report.width).toBe(200);
+    expect(report.height).toBe(120);
+    expect(report.bad, `expected 0 non-green pixels, first bad: ${JSON.stringify(report.firstBad)}, avg: ${JSON.stringify(report.avg)}`).toBe(0);
+    expect(report.avg[0]).toBeLessThanOrEqual(2);
+    expect(report.avg[1]).toBeGreaterThanOrEqual(253);
+    expect(report.avg[2]).toBeLessThanOrEqual(2);
+
+    // 2. Download image (⬇) → verify exact 200×120 and 100% pure green pixels too.
+    const downloadPromise = page.waitForEvent('download');
+    await page.locator('.inspector-download').click();
+    const download = await downloadPromise;
+    const pngBase64 = fs.readFileSync(await download.path()).toString('base64');
+    const dlReport = await page.evaluate(async (b64) => {
+      const res = await fetch('data:image/png;base64,' + b64);
+      const bmp = await createImageBitmap(await res.blob());
+      const canvas = document.createElement('canvas');
+      canvas.width = bmp.width;
+      canvas.height = bmp.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bmp, 0, 0);
+      const data = ctx.getImageData(0, 0, bmp.width, bmp.height).data;
+      let bad = 0;
+      let firstBad = null;
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3];
+        if (r > 2 || g < 253 || b > 2 || a !== 255) {
+          bad++;
+          if (!firstBad) {
+            const p = i / 4;
+            firstBad = { x: p % bmp.width, y: Math.floor(p / bmp.width), rgba: [r, g, b, a] };
+          }
+        }
+      }
+      return { width: bmp.width, height: bmp.height, bad, firstBad };
+    }, pngBase64);
+
+    expect(dlReport.width).toBe(200);
+    expect(dlReport.height).toBe(120);
+    expect(dlReport.bad, `download expected 0 non-green pixels, first bad: ${JSON.stringify(dlReport.firstBad)}`).toBe(0);
   } finally {
     if (context) await context.close().catch(() => {});
     await new Promise((resolve) => server.close(resolve));
